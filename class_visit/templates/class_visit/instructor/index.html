@@ -1,0 +1,52 @@
+{% extends "instructor/base_instructor.html" %}
+{% load static %}
+
+{% block title %}My Class Visits{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'datatables/datatables.min.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-header py-3 d-flex align-items-center justify-content-between">
+    <h6 class="m-0 font-weight-bold text-primary">Class Visits</h6>
+    <button id="btn_export_pdf"
+            class="btn btn-sm btn-outline-secondary"
+            disabled>
+      Export Selected as PDF
+    </button>
+  </div>
+  <div class="card-body">
+    <table id="tbl_instructor_visits" class="table table-bordered table-sm w-100">
+      <thead>
+        <tr>
+          <th><input type="checkbox" id="chk_all"></th>
+          <th>Visit Date</th>
+          <th>Type</th>
+          <th>Section(s)</th>
+          <th>Visitor(s)</th>
+          <th>Confirmed</th>
+          <th>Report</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+    </table>
+  </div>
+</div>
+
+<form id="frm_bulk" method="post" action="{{ bulk_url }}">
+  {% csrf_token %}
+  <input type="hidden" name="action" value="export_pdf">
+  <div id="hidden_ids"></div>
+</form>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'datatables/datatables.min.js' %}"></script>
+<script src="{% static 'class_visit/js/instructor_visits.js' %}"></script>
+<script>
+  var CV_API_URL = "{{ api_url }}";
+  var CV_BULK_URL = "{{ bulk_url }}";
+</script>
+{% endblock %}

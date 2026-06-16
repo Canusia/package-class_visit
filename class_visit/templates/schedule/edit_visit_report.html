@@ -1,0 +1,176 @@
+{% extends "cis/logged-base-modal.html" %}
+{% load templatehelpers %}
+
+{% load crispy_forms_tags %}
+
+{% block body %}
+<script>
+    jQuery(document).ready(function($) {
+
+        $('form.frm_ajax > .btn-submit').on('click', function(event) {
+
+            var blocked_element = $(this).parent()
+            $(blocked_element).block();
+            event.preventDefault()
+
+            // prevent propogation
+            event.stopPropagation();
+
+            form = $(this).closest('form')
+
+            if($("input, select, textarea").hasClass('is-invalid'))
+                $("input, select, textarea").removeClass('is-invalid')
+            
+            if($("input, select, textarea").next('p').length) 
+                $("input, select, textarea").nextAll('p').empty();
+
+            let action = $(form).attr('action')
+            let first_element = '';
+
+            let formData = new FormData(form[0]);
+            formData.append('submit', $(this).attr('value'));
+            
+            $.post({
+                url: action,
+                data: formData,
+                processData: false,
+                contentType: false,
+                error: function(xhr, status, error) {
+
+                    let errors = $.parseJSON(xhr.responseJSON.errors);
+                    
+                    for (var name in errors) {
+                        for (var i in errors[name]) {
+                            var $input = $("[name='"+ name +"']");
+                            $input.addClass('is-invalid');
+
+                            $input.after("<p class='invalid-feedback'><strong class=''>" + errors[name][i].message + "</strong></p>");
+                        }
+
+                        if(first_element == '')
+                            $input.focus()
+                        else {
+                            first_element = '-'
+                        }
+                    }
+
+                    var span = document.createElement('span')
+                    span.innerHTML = xhr.responseJSON.message
+                    swal({
+                        title: xhr.responseJSON.message,
+                        content: span,
+                        icon: 'warning'
+                    });
+
+                    $(blocked_element).unblock();
+                },
+                success: function(response) {
+                $(blocked_element).unblock();
+                    swal({
+                        title: 'Success',
+                        text: response.message,
+                        icon: response.status
+                    }).then(
+                        (value) => {
+                            if (response.visit_report_url) {
+                            window.location.href = response.visit_report_url;
+                            return;
+                            } else{
+                
+                            window.parent.location.reload();
+                            }
+                            window.parent.closeVisitModal();
+                        }
+                    );
+                }
+            });
+            return false
+        });
+    });
+
+    function deleteFile(fileId) {
+    if (!confirm('Are you sure you want to delete this file?')) return;
+    fetch(`/faculty/class_visits/visits/delete_visit_report_file/${fileId}/`, {
+        method: 'POST',
+        headers: {
+            'X-CSRFToken': '{{ csrf_token }}'
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        alert(data.message);
+        if (data.success) {
+            location.reload();
+        }
+    });
+    }
+    
+    $(document).ready(function () {
+        function toggle_discussion_with_admin() {
+            if ($("input:checkbox[name='met_school_administrators']").is(":checked")) {
+                $("#div_id_administrator_discussion").show()
+            } else {
+                // nothing checked
+                $("#div_id_administrator_discussion").hide()
+            }
+        }
+
+        $(document).on('click', "input:checkbox[name='met_school_administrators']", toggle_discussion_with_admin)
+
+        toggle_discussion_with_admin()
+
+        if($('#id_visit_report_id').val() != '-1') {            
+            if("{{visit_report.is_draft}}" != 'True') {
+                $("input[value='Save as Draft']").hide()
+                $("input[value='Save and Submit']").attr('value', 'Save & Update Report')
+            }
+        }
+    });
+</script>
+<div class="row">
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <div class="card-title">
+                    <h3>Visit Details</h3>
+                    {{visit.asHTML|safe}}
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h3>Visit Report</h3>
+                {% include "cis/messages.html" with messages=messages %}
+                <form class="frm_ajax"
+                    action="{% if visit_report %}
+                                {% url 'faculty_class_visit:update_visit_report' visit_id visit_report.id %}
+                            {% else %}
+                                {% url 'faculty_class_visit:edit_visit_report' visit_id %}
+                            {% endif %}"
+                    method="post" enctype="multipart/form-data">                    {% csrf_token %}
+                    {{ form | crispy }}
+                    <h5>Uploaded Files</h5>
+                    <ul class="list-group">
+                        {% for file in existing_files %}
+                            <li class="list-group-item">
+                                <a href="{{ file.file.url }}" target="_blank">{{ file.file.name }}</a>
+                                <button class="btn btn-danger btn-sm" type="button" onclick="deleteFile('{{ file.id }}')">Delete</button>
+                            </li>
+                        {% empty %}
+                            <li class="list-group-item">No files uploaded.</li>
+                        {% endfor %}
+                    </ul>
+                    <div class="clearfix">&nbsp;</div>
+                    {% if not visit_report.is_submitted %}
+                    <input type="button" name='submit' class="btn btn-info btn-sm btn-submit" value="Save as Draft">
+                    {% endif %}
+                    <input type="button" name='submit' class="btn btn-primary btn-sm btn-submit" value="{% if visit_report.is_submitted %}Update{% else %}Save and Submit{% endif %}">
+                    <input type="button" class="btn btn-sm" onclick="window.parent.closeVisitModal()" value="Cancel & Close">
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,198 @@
+{% load templatehelpers %}
+
+<div class="card mb-4 border-top-0">
+    <div class="card-body">
+        <script>
+            var tbl_visits;
+            
+            $(document).ready(function () {
+                tbl_visits = $('#tbl_visits').DataTable(
+                    {
+                        'orderCellsTop': true,
+                        'fixedHeader': true,
+                        'ajax': {
+                            'url': '/ce/class_visits/api/visit_schedule/',
+                            data: function (d) {
+                                    d.format = 'datatables';
+                                    {%if type == 'by_class_section' %}
+                                    d.class_section_id = '{{class_section.id}}';
+                                    {%elif type == 'by_visitor' %}
+                                    d.visitor_id = '{{visitor.id}}';
+                                    {%elif type == 'by_highschool' %}
+                                    d.highschool_id = '{{highschool.id}}';
+                                    {%elif type == 'by_course' %}
+                                    d.course_id = '{{course.id}}';
+                                    {%elif type == 'by_teacher' %}
+                                    d.teacher_id = '{{teacher.id}}';
+                                    {%elif type == 'by_term' %}
+                                    d.term_id = '{{term.id}}';
+                                    {%elif type == 'by_academic_year' %}
+                                    d.academic_year_id = '{{academic_year.id}}';
+                                    {% endif %}
+                                }
+                        },
+                        order: [[0, 'desc']],
+                        serverSide: true,
+                        processing: true,
+                        language: {
+                            'loadingRecords': '&nbsp;',
+                        },
+                        'lengthMenu': [30, 50, 100],
+                        'columns': [
+                            null,
+                            {
+                                'render': function (data, type, row, meta) {
+                                    let term = "";
+
+                                    $.each(row.class_sections, function(index, val) {
+                                        let temp_term = val.term.label + ' ' + val.term.year
+
+                                        if(term!=temp_term)
+                                            term = temp_term
+                                    });
+
+                                    return term;
+                                }
+                            },
+                            {
+                                'render': function (data, type, row, meta) {
+                                    let courses = "";
+
+                                    $.each(row.class_sections, function(index, val) {
+                                        courses += val.course.name + ' (' + val.class_number + '-' + val.section_number + ')' +  "<br>"; 
+                                    });
+
+                                    return courses;
+                                }
+                            },
+                            {
+                                'render': function (data, type, row, meta) {
+                                    let visitors = "";
+
+                                    $.each(row.visitors, function(index, val) {
+                                        
+                                        visitors += val.first_name + ' ' + val.last_name + "<br>"; 
+                                    });
+
+                                    return visitors;
+                                }
+                            },
+                            null,
+                            {
+                                'render': function (data, type, row, meta) {
+                                    let btn_group = "";
+
+                                    let label = 'No report found'
+                                    if (row.has_started_report == 'True') {
+                                        if (row.has_submitted_report != 'True') {
+                                            label = 'View \'Draft\' Report'
+                                        } else
+                                            label = 'View Report'
+
+                                        btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="View Report">  <a type="button" href="/ce/class_visits/visits/manage_visit_report/' + row.id + '" class="btn btn-sm btn-info">' + label + '</a>'
+                                    } else {
+                                        btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="Edit Visit Schedule & Manage Visit Report">  <a type="button" href="#visits" data-src="/faculty/class_visits/visits/edit_visit_report/' + row.id + '" class="btn btn-sm btn-info ajax-add_visit">' + label + '</a>'
+                                    }
+
+
+                                    btn_group += '<div class="btn-group" role="group">   <button id="btnGroupDrop1" type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button><div class="dropdown-menu" aria-labelledby="btnGroupDrop1"><a class="dropdown-item ajax-add_visit" href=\'#visits\' data-src="' + row.ce_url + '" data-target="tbl_visits"><i class=\'fas fa-edit\'></i>&nbsp;&nbsp;Edit Visit Date</a>'
+
+                                    if (label == 'No report found')
+                                        btn_group += '<a data-src="' + row.delete_url + '" data-target=\"tbl_visits\" class="dropdown-item ajax-delete_visit" href="#visits"><i class=\'fas fa-trash\'></i>&nbsp;&nbsp;Delete</a>'
+
+                                    btn_group += '</div></div>'
+                                    btn_group += '</div>'
+                                    return btn_group;
+                                }
+                            }
+                        ]
+                    }
+                );
+
+    $(document).on('hidden.bs.modal', '#visit_modal', function (event) {
+        tbl_visits.ajax.reload(null, false);
+    });
+
+    window.closeVisitModal = function() {
+        $('#visit_modal').modal('hide');
+    };
+
+$(document).on('click', 'a.ajax-add_visit', function(event) {
+var src = $(this).attr('data-src');
+
+$("#details_src").attr('src', src);
+$("#details_src").attr('refresh-target', $(this).attr('refresh-target'));
+$('#visit_modal').modal({
+    show: true,
+    backdrop: 'static'
+});
+
+event.preventDefault()
+return false;
+});
+            });
+        </script>
+        {% if allow_add_new_visit_date == '1' %}
+        <div class="text-right">
+            <a href="#visits" class="btn btn-sm btn-info ajax-add_visit" 
+                data-target="tbl_visits" 
+                data-parent="{{record.id}}" 
+                data-src="{% url 'class_visit:manage_visit' record.id %}"
+                ><i
+                    class="fa fas-light fa-plus-circle"></i>&nbsp;Add New Visit</a>
+        </div>
+        <div class="clearfix">&nbsp;</div>
+        {%endif%}
+        <table id="tbl_visits" class="table table-striped responsive" style="width:100%">
+            <thead>
+                <tr>
+                    <th data-data="visit_date" searchable="0" data-name="visit_date">Visit Date
+                    </th>
+                    <th data-data="createdon" data-name="createdon">Term
+                    </th>
+                    <th data-data="class_sections" searchable="0" data-name="class_sections">Class Section(s)
+                    </th>
+                    <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)
+                    </th>
+                    <th data-data="payment_status_sexy" searchable="0" data-name="payment_status_sexy">Payment Status
+                    </th>
+                    <th data-data="id" data-name='id'>Actions
+                    </th>
+                </tr>
+            </thead>
+        </table>
+    </div>
+</div>
+
+
+<style>
+    .modal-dialog,
+    .modal-content {
+      /* 80% of window height */
+      height: 80%;
+    }
+
+    .modal-dialog {
+      max-width: 50%;
+    }
+    .modal-body {
+      max-height: calc(100vh - 65px);
+      overflow-y: none;
+    }
+  </style>
+
+
+  <div id='visit_modal' class='modal fade' role='dialog' tabindex="-1" style="">
+    <div class='modal-dialog' style="">
+        <div class='modal-content'>
+            <div class='modal-body' style="position: relative;">
+                <iframe id='details_src' width='100%' height='100%'
+                    style="position:  absolute; height: 98%; width: 97%;" frameborder='0' allowfullscreen></iframe>
+            </div>
+            <div class='modal-footer'>
+              <button type='button' class='close' data-dismiss='modal'>&times;</button>
+          </div>
+
+        </div>
+    </div>
+</div>

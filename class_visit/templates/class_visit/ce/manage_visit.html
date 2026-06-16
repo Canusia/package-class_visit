@@ -1,0 +1,44 @@
+{% extends "cis/logged-base-modal.html" %}
+{% load crispy_forms_tags %}
+
+{% block body %}
+<script>
+$(document).ready(function () {
+    $('form').on('submit', function (event) {
+        event.preventDefault();
+        var form = $(this);
+        $.blockUI();
+        $.post({
+            url: form.attr('action') || window.location.href,
+            data: form.serialize(),
+            dataType: 'json',
+            success: function (resp) {
+                $.unblockUI();
+                if (resp.success) {
+                    swal('Success', resp.message, 'success').then(function () {
+                        window.parent.closeVisitModal();
+                    });
+                } else {
+                    swal('Error', resp.message || 'Please fix the errors and try again.', 'warning');
+                }
+            },
+            error: function (xhr) {
+                $.unblockUI();
+                var msg = 'An error occurred. Please try again.';
+                try { msg = JSON.parse(xhr.responseText).message || msg; } catch (e) {}
+                swal('Error', msg, 'error');
+            }
+        });
+    });
+});
+</script>
+
+<h3 class="mb-3">{{ page_title }}</h3>
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form|crispy }}
+    <input type="submit" class="btn btn-primary btn-sm" value="Save">
+    <input type="button" class="btn btn-secondary btn-sm"
+           onclick="window.parent.closeVisitModal()" value="Cancel">
+</form>
+{% endblock %}

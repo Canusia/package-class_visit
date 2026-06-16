@@ -1,0 +1,42 @@
+{% extends "cis/logged-base.html" %}
+
+{% block title %}Visit Confirmation{% endblock %}
+
+{% block body %}
+<main class="container mt-5">
+  <div class="row justify-content-center">
+    <div class="col-md-6">
+      {% if token_valid %}
+      <div class="card border-success shadow">
+        <div class="card-header bg-success text-white">
+          <h5 class="mb-0">Visit Confirmed</h5>
+        </div>
+        <div class="card-body">
+          <p>
+            Thank you — your attendance at the scheduled class visit on
+            <strong>{{ visit.visit_date_sexy }}</strong> has been confirmed.
+          </p>
+          <p class="text-muted small">
+            You may close this window. If you have questions, please contact
+            the Concurrent Enrollment office.
+          </p>
+        </div>
+      </div>
+      {% else %}
+      <div class="card border-warning shadow">
+        <div class="card-header bg-warning">
+          <h5 class="mb-0">Confirmation Link Not Found</h5>
+        </div>
+        <div class="card-body">
+          <p>
+            The confirmation link you followed could not be found or has
+            already expired. Please contact the Concurrent Enrollment office
+            if you believe this is an error.
+          </p>
+        </div>
+      </div>
+      {% endif %}
+    </div>
+  </div>
+</main>
+{% endblock %}

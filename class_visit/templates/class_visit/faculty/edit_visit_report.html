@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>{{ page_title }}</title>
+  {% load static %}
+  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+</head>
+<body class="p-3">
+  <h5>{{ page_title }}</h5>
+
+  {% if existing_report %}
+  <p class="text-muted">
+    Status: <strong>{{ existing_report.status }}</strong>
+  </p>
+  {% endif %}
+
+  {% if form.errors %}
+  <div class="alert alert-danger">
+    {% for field, errors in form.errors.items %}
+      {% for error in errors %}
+        <p>{{ field }}: {{ error }}</p>
+      {% endfor %}
+    {% endfor %}
+  </div>
+  {% endif %}
+
+  <form id="report_form" method="post">
+    {% csrf_token %}
+    {% for field in form %}
+      {% if field.name != 'submit_action' %}
+      <div class="form-group">
+        <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+        {{ field }}
+        {% if field.help_text %}
+          <small class="form-text text-muted">{{ field.help_text }}</small>
+        {% endif %}
+        {% if field.errors %}
+          <div class="invalid-feedback d-block">{{ field.errors }}</div>
+        {% endif %}
+      </div>
+      {% endif %}
+    {% endfor %}
+
+    <input type="hidden" name="submit_action" id="submit_action_input" value="draft">
+
+    <button type="button" class="btn btn-secondary" onclick="submitReport('draft')">Save as Draft</button>
+    <button type="button" class="btn btn-primary" onclick="submitReport('submit')">Submit Report</button>
+  </form>
+
+  <script>
+  function submitReport(action) {
+    document.getElementById('submit_action_input').value = action;
+    var form = document.getElementById('report_form');
+    var data = new FormData(form);
+    fetch(form.action || window.location.href, {
+      method: 'POST',
+      body: data,
+      headers: { 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function(r) { return r.json(); })
+    .then(function(resp) {
+      if (resp.success) {
+        if (resp.action === 'reload' && window.parent && window.parent.closeVisitModal) {
+          window.parent.closeVisitModal();
+        } else {
+          alert(resp.message);
+        }
+      } else {
+        alert(resp.message || 'An error occurred.');
+      }
+    });
+  }
+  </script>
+</body>
+</html>

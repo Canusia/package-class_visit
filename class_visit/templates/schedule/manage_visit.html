@@ -1,0 +1,80 @@
+{% extends "cis/logged-base-modal.html" %}
+{% load templatehelpers %}
+
+{% load crispy_forms_tags %}
+
+{% block body %}
+
+<script>
+    $(document).ready(function () {
+
+        function update_registrations(obj) {
+            if($(obj).val() == 'class_charge') {
+                $("#id_registration").prop('disabled', false)
+            } else {
+                $("#id_registration").prop('disabled', 'disabled')
+            }
+        }
+
+        update_registrations($("#id_label"));
+
+        $(document).on("change", "#id_label", function() {
+            update_registrations($(this));    
+        });
+
+        $('form').on('submit', function(event) {
+            event.preventDefault()
+
+            let form = $(this).closest('form');
+            let form_data = $(form).serialize();
+            
+            $.blockUI();
+            $.post({
+                url: "{% url 'class_visit:manage_visit' class_section_id %}",
+                data: form_data,
+                dataType: 'json',
+                success: function (response) {
+                    $.unblockUI();
+
+                    if (response.success ) {
+                        var span = document.createElement("span");
+                        span.innerHTML = response.message
+
+                        swal({
+                            title: 'Success',
+                            content: span,
+                            icon: 'success',
+                            button: {
+                                text: 'Okay',
+                                closeModal: true
+                            }
+                        }).then(
+                            (value) => {
+                                window.parent.closeVisitModal();
+                            }
+                        )
+                    } else {
+                        swal(
+                            "",
+                            response.message,
+                            "warning")
+                    }
+                }
+            })
+            return false;
+        })
+    });
+</script>
+<style>
+    div.form-check {
+        margin-left: 1.2em;
+    }
+</style>
+<h3 class="mb-3">Manage Visit Schedule</h3>
+<form action="" method="post">
+    {% csrf_token %}
+    {{ form | crispy }}
+    <input type="submit" class="btn btn-primary btn-sm" value="Save">
+    <input type="button" class="btn btn-sm" onclick="window.parent.closeVisitModal()" value="Cancel & Close">
+</form>
+{% endblock %}

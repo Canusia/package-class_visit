@@ -1,0 +1,616 @@
+{% extends "cis/logged-base.html" %}
+{%block title %}{{page_title}}{% endblock %}
+
+{% load templatehelpers %}
+
+{% block body %}
+
+<main>
+    <div class="">
+        <div class="row">
+            <div class="col-sm-6 col-xs-12">
+                <h1 class="h3 mb-4 text-gray-800">{{page_title}}&nbsp;
+                </h1>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <div class="">
+                {% include "cis/messages.html" with messages=messages %}
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#all">All Scheduled {{page_title}}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#no_class_visit">Missing Visits</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#pending_payment">Pending Payment</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane active" id="all">
+                        <div class="bg-white border border-top-0">
+                            <div class="col-12 pt-3 mb-3">
+                                <div class="col-12 pt-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="card">
+                                                <div class="card-body bg-gray-200">
+                                                    <form id="frm_visits_filter"
+                                                        class="form-inline float-right filter">
+                                                        <div class="form-row">
+                                                            <div class="col">
+                                                                <div class="float-right">
+                                                                    <select class="form-control" name="term">
+                                                                        <option value="">Filter By Term</option>
+                                                                        {% for c in terms %}
+                                                                        <option value="{{c.id}}" {% if c.id == active_term.id %} selected
+                                                                        {% endif %}>{{c.label}} {{c.year}}</option>
+                                                                        {% endfor %}
+                                                                    </select>&nbsp;&nbsp;
+                                                                    <select class="form-control" name="course">
+                                                                        <option value="">Filter By Course</option>
+                                                                        <option value='-2'>All My Course(s)</option>
+                                                                        {% for course in courses %}
+                                                                        <option value="{{course.id}}">{{course.name}}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <table id="tbl_visits" class="table table-striped responsive" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th data-data="visit_date" searchable="0" data-name="visit_date">Visit
+                                                    Date
+                                                </th>
+                                                <th data-data="createdon" data-name="createdon">Term
+                                                </th>
+                                                <th data-data="class_sections" searchable="0"
+                                                    data-name="class_sections">Class Section(s)
+                                                </th>
+                                                <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)
+                                                </th>
+                                                <th data-data="payment_status_sexy" searchable="0" data-name="payment_status_sexy">Payment Status
+                                                </th>
+                                                <th data-data="id" data-name='id'><span class="sr-only">Actions</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end tab # records_active -->
+
+                    </div>
+                    <!-- end #all -->
+
+                    <div class="tab-pane" id="pending_payment">
+                        <div class="bg-white border border-top-0">
+                            <div class="col-12 pt-3 mb-3">
+                                <div class="col-12 pt-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="card">
+                                                <div class="card-body bg-gray-200">
+                                                    <form id="frm_pending_payment_filter"
+                                                        class="form-inline float-right filter">
+                                                        <div class="form-row">
+                                                            <div class="col">
+                                                                <div class="float-right">
+                                                                    <select class="form-control" name="term">
+                                                                        <option value="">Filter By Term</option>
+                                                                        {% for c in terms %}
+                                                                        <option value="{{c.id}}" {% if c.id == active_term.id %} selected
+                                                                        {% endif %}>{{c.label}} {{c.year}}</option>
+                                                                        {% endfor %}
+                                                                    </select>&nbsp;&nbsp;
+                                                                    <select class="form-control" name="course">
+                                                                        <option value="">Filter By Course</option>
+                                                                        <option value='-2'>All My Course(s)</option>
+                                                                        {% for course in courses %}
+                                                                        <option value="{{course.id}}">{{course.name}}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <table id="tbl_pending_payment" class="table table-striped responsive" style="width:100%">
+                                        <thead>
+                                            <tr>
+                                                <th data-data="visit_date" searchable="0" data-name="visit_date">Visit
+                                                    Date
+                                                </th>
+                                                <th data-data="createdon" data-name="createdon">Term
+                                                </th>
+                                                <th data-data="class_sections" searchable="0"
+                                                    data-name="class_sections">Class Section(s)
+                                                </th>
+                                                <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)
+                                                </th>
+                                                <th data-data="payment_status_sexy" searchable="0" data-name="payment_status_sexy">Payment Status
+                                                </th>
+                                                <th data-data="id" data-name='id'><span class="sr-only">Actions</span>
+                                                </th>
+                                            </tr>
+                                        </thead>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- end tab # records_active -->
+
+                    </div>
+                    <!-- end #pending_payment -->
+
+                    <div class="tab-pane" id="no_class_visit">
+                        <div class="bg-white border border-top-0">
+                            <div class="col-12 pt-3 mb-3">
+                                <div class="col-12 pt-3 mb-3">
+                                    <div class="row">
+                                        <div class="col-md-12 mb-3">
+                                            <div class="card">
+                                                <div class="card-body bg-gray-200">
+                                                    <form id="frm_no_class_visit_filter"
+                                                        class="form-inline float-right filter">
+                                                        <div class="form-row">
+                                                            <div class="col">
+                                                                <div class="float-right">
+                                                                    <select class="form-control" name="type">
+                                                                        <option value="missing_visit">Filter By Type</option>
+                                                                        <option value="has_visit_to_other_section">Has Visit to other section</option>
+                                                                    </select>&nbsp;&nbsp;<select class="form-control" name="term">
+                                                                        <option value="">Filter By Term</option>
+                                                                        {% for c in terms %}
+                                                                        <option value="{{c.id}}" {% if c.id == active_term.id %} selected
+                                                                        {% endif %}>{{c.label}} {{c.year}}</option>
+                                                                        {% endfor %}
+                                                                    </select>&nbsp;&nbsp;
+                                                                    <select class="form-control" name="course">
+                                                                        <option value="">Filter By Course</option>
+                                                                        <option value='-2'>All My Course(s)</option>
+                                                                        {% for course in courses %}
+                                                                        <option value="{{course.id}}">{{course.name}}</option>
+                                                                        {% endfor %}
+                                                                    </select>
+                                                                </div>
+
+                                                            </div>
+                                                        </div>
+                                                    </form>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+
+
+                            <table id="tbl_no_class_visit" class="table table-striped responsive" style="width:100%">
+                                <thead>
+                                    <tr>
+                                        <th data-name="course.name"
+                                            data-data="course.name">Course</th>
+                                        <th data-data="class_number" data-name='class_number'>Class No.</th>
+                                        <th data-name="has_visit_to_other_section" data-data="has_visit_to_other_section"></th>
+                                        <th data-data="teacher.user.last_name" data-name="teacher.user.last_name">Instructor
+                                        </th>
+                                        <th data-data="highschool.name" data-name="highschool.name">High School
+                                        </th>
+                                    </tr>
+                                </thead>
+                            </table>
+                                </div>
+                            </div>
+
+
+                        </div>
+                        <!-- end tab # records_active -->
+
+                    </div>
+                    <!-- end #no_class_visit -->
+
+                    <script>
+                        var tbl_visits, tbl_pending_payment, tbl_no_class_visit;
+                        setInterval(function () {
+
+                            if(!tbl_visits.rows('.selected').any())
+                                tbl_visits.ajax.reload(null, false);
+                            
+                            if(!tbl_pending_payment.rows('.selected').any())
+                                tbl_pending_payment.ajax.reload(null, false);
+                            
+                            if(!tbl_no_class_visit.rows('.selected').any())
+                                tbl_no_class_visit.ajax.reload(null, false);
+                        }, 5000 * 60);
+
+                        $(document).ready(function () {
+
+                            $(document).on("change", "form#frm_visits_filter :input", function () {
+                                tbl_visits.ajax.reload()
+                            })
+
+                            $(document).on("change", "form#frm_pending_payment_filter :input", function () {
+                                tbl_pending_payment.ajax.reload()
+                            })
+
+                            $(document).on("change", "form#frm_no_class_visit_filter :input", function () {
+                                tbl_no_class_visit.ajax.reload()
+                            })
+                            // classes_api_url
+
+                            tbl_no_class_visit = $('#tbl_no_class_visit').DataTable(
+                                {
+                                    'dom': 'B<"float-left mt-3 mb-3"l><"float-right mt-3"f><"row clear">rt<"row"<"col-6"i><"col-6 float-right"p>>',
+                                    'buttons': [
+                                        {
+                                            extend: 'csv', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-file-csv text-white"></i>&nbsp;CSV',
+                                            titleAttr: 'Export results to CSV' 
+                                        },
+                                        { 
+                                            extend: 'print', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-print text-white"></i>&nbsp;Print',
+                                            titleAttr: 'Print' 
+                                        },
+                                    ],
+                                    'orderCellsTop': true,
+                                    'fixedHeader': true,
+                                    'ajax': {
+                                        'url': '{{classes_api_url}}',
+                                        data: function (d) {
+                                            d.format = 'datatables';
+                                            d.type = $("#frm_no_class_visit_filter select[name=type]").val();
+                                            d.term_id = $("#frm_no_class_visit_filter select[name=term]").val();
+                                            d.course_id = $("#frm_no_class_visit_filter select[name=course]").val();
+                                        }
+                                    },
+                                    order: [[0, 'desc']],
+                                    serverSide: true,
+                                    processing: true,
+                                    language: {
+                                        'loadingRecords': '&nbsp;',
+                                    },
+                                    'lengthMenu': [30, 50, 100],
+                                    'columns': [
+                                        null,
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let col = row.class_number + ' - ' + row.section_number
+
+                                                if(row.has_visit_to_other_section == 'True') {
+                                                    col = "<span class='text-primary'>" + col + "*</span>"
+                                                }
+                                                return col
+                                            }
+                                        },
+                                        {
+                                            'visible': false,
+                                            'searchable': false
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                if(row.teacher === null)
+                                                    return '';
+
+                                                let col = row.teacher.user.last_name + ', ' + row.teacher.user.first_name
+                                                return col
+                                            }
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                if(row.highschool === null)
+                                                    return '';
+
+                                                let col = row.highschool.name
+                                                return col
+                                            }
+                                        }
+                                    ]
+                                }
+                            );
+
+                            tbl_pending_payment = $('#tbl_pending_payment').DataTable(
+                                {
+                                    'dom': 'B<"float-left mt-3 mb-3"l><"float-right mt-3"f><"row clear">rt<"row"<"col-6"i><"col-6 float-right"p>>',
+                                    'buttons': [
+                                        {
+                                            extend: 'csv', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-file-csv text-white"></i>&nbsp;CSV',
+                                            titleAttr: 'Export results to CSV' 
+                                        },
+                                        { 
+                                            extend: 'print', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-print text-white"></i>&nbsp;Print',
+                                            titleAttr: 'Print' 
+                                        },
+                                    ],
+                                    'orderCellsTop': true,
+                                    'searching': false,
+                                    'fixedHeader': true,
+                                    'ajax': {
+                                        'url': '{{api_url}}',
+                                        data: function (d) {
+                                            d.format = 'datatables';
+                                            d.class_section_id = '{{class_section.id}}';
+                                            d.term_id = $("#frm_pending_payment_filter select[name=term]").val();
+                                            d.course_id = $("#frm_pending_payment_filter select[name=course]").val();
+                                            d.type = 'pending_payment';
+                                        }
+                                    },
+                                    order: [[0, 'desc']],
+                                    serverSide: true,
+                                    processing: true,
+                                    language: {
+                                        'loadingRecords': '&nbsp;',
+                                    },
+                                    'lengthMenu': [30, 50, 100],
+                                    'columns': [
+                                        null,
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let term = "";
+
+                                                $.each(row.class_sections, function (index, val) {
+                                                    let temp_term = val.term.label + ' ' + val.term.year
+
+                                                    if (term != temp_term)
+                                                        term = temp_term
+                                                });
+
+                                                return term;
+                                            }
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let courses = "";
+
+                                                $.each(row.class_sections, function (index, val) {
+                                                    courses += val.course.name + ' @ ' + val.highschool.name + '<br>&nbsp;&nbsp;<span class="text-muted">(' + val.class_number + '-' + val.section_number + ' by ' + val.teacher.user.last_name + ', ' + val.teacher.user.first_name + ")</span><br>";
+                                                });
+
+                                                return courses;
+                                            }
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let visitors = "";
+
+                                                $.each(row.visitors, function (index, val) {
+
+                                                    visitors += val.first_name + ' ' + val.last_name + "<br>";
+                                                });
+
+                                                return visitors;
+                                            }
+                                        },
+                                        null,
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let btn_group = "";
+
+                                                let label = 'No report found'
+                                                if (row.has_started_report == 'True') {
+                                                    if (row.has_submitted_report != 'True') {
+                                                        label = 'View \'Draft\' Report'
+                                                    } else
+                                                        label = 'View Report'
+
+                                                    btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="View Report">  <a type="button" href="/ce/class_visits/visits/manage_visit_report/' + row.id + '" class="btn btn-sm btn-info">' + label + '</a>'
+                                                } else {
+                                                    btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="Edit Visit Schedule & Manage Visit Report">  <a type="button" href="#visits" data-src="/faculty/class_visits/visits/edit_visit_report/' + row.id + '" class="btn btn-sm btn-info ajax-add_visit">' + label + '</a>'
+                                                }
+
+
+                                                btn_group += '<div class="btn-group" role="group">   <button id="btnGroupDrop1" type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button><div class="dropdown-menu" aria-labelledby="btnGroupDrop1"><a class="dropdown-item ajax-add_visit" href=\'#visits\' data-src="' + row.ce_url + '" data-target="tbl_visits"><i class=\'fas fa-edit\'></i>&nbsp;&nbsp;Edit Visit Date</a>'
+
+                                                if (label == 'No report found')
+                                                    btn_group += '<a data-src="' + row.delete_url + '" data-target=\"tbl_visits\" class="dropdown-item ajax-delete_visit" href="#visits"><i class=\'fas fa-trash\'></i>&nbsp;&nbsp;Delete</a>'
+
+                                                btn_group += '</div></div>'
+                                                btn_group += '</div>'
+                                                return btn_group;
+                                            }
+                                        }
+                                    ]
+                                }
+                            );
+
+                            tbl_visits = $('#tbl_visits').DataTable(
+                                {
+                                    'dom': 'B<"float-left mt-3 mb-3"l><"float-right mt-3"f><"row clear">rt<"row"<"col-6"i><"col-6 float-right"p>>',
+                                    'buttons': [
+                                        {
+                                            extend: 'csv', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-file-csv text-white"></i>&nbsp;CSV',
+                                            titleAttr: 'Export results to CSV' 
+                                        },
+                                        { 
+                                            extend: 'print', className: 'btn btn-sm btn-primary text-white text-light',
+                                            text: '<i class="fas fa-print text-white"></i>&nbsp;Print',
+                                            titleAttr: 'Print' 
+                                        },
+                                    ],
+                                    'orderCellsTop': true,
+                                    'searching': false,
+                                    'fixedHeader': true,
+                                    'ajax': {
+                                        'url': '{{api_url}}',
+                                        data: function (d) {
+                                            d.format = 'datatables';
+                                            d.class_section_id = '{{class_section.id}}';
+                                            d.term_id = $("#frm_visits_filter select[name=term]").val()
+                                            d.course_id = $("#frm_visits_filter select[name=course]").val()
+                                        }
+                                    },
+                                    order: [[0, 'desc']],
+                                    serverSide: true,
+                                    processing: true,
+                                    language: {
+                                        'loadingRecords': '&nbsp;',
+                                    },
+                                    'lengthMenu': [30, 50, 100],
+                                    'columns': [
+                                        null,
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let term = "";
+
+                                                $.each(row.class_sections, function (index, val) {
+                                                    let temp_term = val.term.label + ' ' + val.term.year
+
+                                                    if (term != temp_term)
+                                                        term = temp_term
+                                                });
+
+                                                return term;
+                                            }
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let courses = "";
+
+                                                $.each(row.class_sections, function (index, val) {
+                                                    courses += val.course.name + ' @ ' + val.highschool.name + '<br>&nbsp;&nbsp;<span class="text-muted">(' + val.class_number + '-' + val.section_number + ' by ' + val.teacher.user.last_name + ', ' + val.teacher.user.first_name + ")</span><br>";
+                                                });
+
+                                                return courses;
+                                            }
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let visitors = "";
+
+                                                $.each(row.visitors, function (index, val) {
+
+                                                    visitors += val.first_name + ' ' + val.last_name + "<br>";
+                                                });
+
+                                                return visitors;
+                                            }
+                                        },
+                                        {
+                                            'searchable': false,
+                                            'orderable': false
+                                        },
+                                        {
+                                            'render': function (data, type, row, meta) {
+                                                let btn_group = "";
+
+                                                let label = 'No report found'
+                                                if (row.has_started_report == 'True') {
+                                                    if (row.has_submitted_report != 'True') {
+                                                        label = 'View \'Draft\' Report'
+                                                    } else
+                                                        label = 'View Report'
+
+                                                    btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="View Report">  <a type="button" href="/ce/class_visits/visits/manage_visit_report/' + row.id + '" class="btn btn-sm btn-info">' + label + '</a>'
+                                                } else {
+                                                    btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="Edit Visit Schedule & Manage Visit Report">  <a type="button" href="#visits" data-src="/faculty/class_visits/visits/edit_visit_report/' + row.id + '" class="btn btn-sm btn-info ajax-add_visit">' + label + '</a>'
+                                                }
+
+
+                                                btn_group += '<div class="btn-group" role="group">   <button id="btnGroupDrop1" type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Actions</button><div class="dropdown-menu" aria-labelledby="btnGroupDrop1"><a class="dropdown-item ajax-add_visit" href=\'#visits\' data-src="' + row.ce_url + '" data-target="tbl_visits"><i class=\'fas fa-edit\'></i>&nbsp;&nbsp;Edit Visit Date</a>'
+
+                                                if (label == 'No report found')
+                                                    btn_group += '<a data-src="' + row.delete_url + '" data-target=\"tbl_visits\" class="dropdown-item ajax-delete_visit" href="#visits"><i class=\'fas fa-trash\'></i>&nbsp;&nbsp;Delete</a>'
+
+                                                btn_group += '</div></div>'
+                                                btn_group += '</div>'
+                                                return btn_group;
+                                            }
+                                        }
+                                    ]
+                                }
+                            );
+
+                            $(document).on('click', "a.ajax-delete_visit", function () {
+                                if (!confirm("Are you sure you want to permanently delete this record?"))
+                                    return;
+
+                                $.blockUI();
+                                $.ajax({
+                                    type: 'GET',
+                                    url: $(this).attr('data-src'),
+                                    success: function (response) {
+                                        $.unblockUI();
+                                        swal({
+                                            title: 'Success',
+                                            text: response.message,
+                                            icon: 'success',
+                                            button: {
+                                                text: 'Okay',
+                                                closeModal: true
+                                            }
+                                        }).then(
+                                            (value) => {
+                                                tbl_visits.ajax.reload(null, false);
+                                            }
+                                        )
+
+                                        if (response.status == 'success') {
+                                            window.parent.closeModal();
+                                        }
+                                    }
+                                });
+                            });
+
+                            $(document).on('hidden.bs.modal', '#visit_modal', function (event) {
+                                tbl_visits.ajax.reload(null, false);
+                            });
+
+                            window.closeVisitModal = function () {
+                                $('#visit_modal').modal('hide');
+                            };
+
+                            $(document).on('click', 'a.ajax-add_visit', function (event) {
+                                var src = $(this).attr('data-src');
+
+                                $("#details_src").attr('src', src);
+                                $("#details_src").attr('refresh-target', $(this).attr('refresh-target'));
+                                $('#visit_modal').modal({
+                                    show: true,
+                                    backdrop: 'static'
+                                });
+
+                                event.preventDefault()
+                                return false;
+                            });
+
+                        });
+                    </script>
+                </div>
+            </div>
+
+</main>
+
+<div id='visit_modal' class='modal fade' role='dialog' tabindex="-1" style="">
+    <div class='modal-dialog  modal-dialog-scrollable' style="">
+        <div class='modal-content'>
+            <div class='modal-body' style="position: relative;">
+                <iframe id='details_src' width='100%' height='100%'
+                    style="position:  absolute; height: 98%; width: 97%;" frameborder='0' allowfullscreen></iframe>
+            </div>
+            <div class='modal-footer'>
+                <button type='button' class='close' data-dismiss='modal'>&times;</button>
+            </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

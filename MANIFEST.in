@@ -1,0 +1,13 @@
+include LICENSE
+recursive-include class_visit/admin *
+recursive-include class_visit/forms *
+recursive-include class_visit/models *
+recursive-include class_visit/urls *
+recursive-include class_visit/views *
+recursive-include class_visit/templates *
+recursive-include class_visit/management *
+recursive-include class_visit/migrations *
+recursive-include class_visit/settings *
+recursive-include class_visit/services *
+recursive-include class_visit/serializers *
+recursive-include class_visit/staticfiles *

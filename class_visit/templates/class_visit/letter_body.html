@@ -1,0 +1,30 @@
+{# Inner body for a single class visit letter. Rendered by pdf._build_letter_html. #}
+{# Wrapped in cis/print_base.html by the caller — do NOT include <html>/<body> tags here. #}
+<h2>Class Visit Letter</h2>
+<table style="width:100%;border-collapse:collapse;margin-bottom:16px;">
+  <tr>
+    <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">Instructor</th>
+    <td style="padding:4px 8px;border:1px solid #ccc;">{{ teacher_first_name }} {{ teacher_last_name }}</td>
+  </tr>
+  <tr>
+    <th style="text-align:left;padding:4px 8px;border:1px solid #ccc;">Visit Date</th>
+    <td style="padding:4px 8px;border:1px solid #ccc;">{{ visit_date }}</td>
+  </tr>
+  <tr>
+    <th style="text-align:left;padding:4px 8px;border:1px solid #ccc;">Type of Visit</th>
+    <td style="padding:4px 8px;border:1px solid #ccc;">{{ type_of_visit }}</td>
+  </tr>
+  <tr>
+    <th style="text-align:left;padding:4px 8px;border:1px solid #ccc;">Class Section(s)</th>
+    <td style="padding:4px 8px;border:1px solid #ccc;">{{ class_sections_sexy|safe }}</td>
+  </tr>
+</table>
+
+<table style="width:100%;border-collapse:collapse;">
+  {% for row in rows %}
+  <tr>
+    <th style="width:30%;text-align:left;vertical-align:top;padding:4px 8px;border:1px solid #ccc;">{{ row.label }}</th>
+    <td style="padding:4px 8px;border:1px solid #ccc;">{{ row.value|safe }}</td>
+  </tr>
+  {% endfor %}
+</table>

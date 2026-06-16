@@ -1,0 +1,9 @@
+[build-system]
+requires = ["setuptools>=61.0"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "myce_class_visit"
+version = "0.1"
+description = "MyCE - Class Visit"
+requires-python = ">=3.8"

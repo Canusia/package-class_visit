@@ -1,0 +1,432 @@
+{% extends "cis/logged-base.html" %}
+{%block title %}{{page_title}}{% endblock %}
+
+{% load templatehelpers %}
+
+{% block body %}
+
+<main>
+    <div class="">
+        {{intro|safe}}
+        <div class="table-responsive">
+            <div class="">
+                {% include "cis/messages.html" with messages=messages %}
+                <ul class="nav nav-tabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" data-toggle="tab" href="#schedule_visit"><i class="fas fa-plus"></i>&nbsp;Add Observation Date(s)</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" data-toggle="tab" href="#all">{{page_title}}</a>
+                    </li>
+                </ul>
+
+                <div class="tab-content">
+                    <div class="tab-pane" id="all">
+                        <div class="bg-white border border-top-0">
+                            <div class="col-12 pt-3 mb-3">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="card">
+                                            <div class="card-body bg-gray-200">
+                                                <form id="visit_filter" class="form-inline float-right filter">
+                                                    <div class="form-row">
+                                                        <div class="col">
+                                                            <div class="float-right">
+                                                                <select class="form-control mt-2"
+                                                                    name="term_id">
+                                                                    <option value="">By Term</option>
+                                                                    {% for term in terms %}
+                                                                    <option value="{{term.id}}" {% if c == active_term.id %}
+                                                                        selected {% endif %}>{{term}}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                &nbsp;<select class="form-control mt-2"
+                                                                name="course_id">
+                                                                <option value="">By Course</option>
+                                                                {% for course in courses %}
+                                                                <option value="{{course.id}}">{{course}}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                                &nbsp;<select class="form-control mt-2"
+                                                                name="visitor_id">
+                                                                <option value="">By Visitor</option>
+                                                                {% for visitor in visitors %}
+                                                                <option value="{{visitor.user.id}}">{{visitor.user}}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </form>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <table id="records_all" class="table table-striped responsive" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th data-data="visit_date" data-name="visit_date">Visit Date
+                                            </th>
+                                            <th data-data="createdon" data-name="createdon">Term
+                                            </th>
+                                            <th data-data="class_sections.highschool.name" data-name="class_sections.highschool.name">High School
+                                            </th>
+                                            <th data-data="class_sections.course.name" searchable="0" data-name="class_sections.course.name">Class Section(s) Visiting
+                                            </th>
+                                            <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)
+                                            </th>
+                                            <th data-data="id" data-name='id'>Actions</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end tab # records_active -->
+
+                    <div class="tab-pane active" id="schedule_visit">
+                        <div class="bg-white border border-top-0">
+                            <div class="col-12 pt-3 mb-3">
+                                <div class="row">
+                                    <div class="col-md-12 mb-3">
+                                        <div class="card">
+                                            <div class="card-body bg-gray-200">
+                                                <form id="class_section_filter" class="form-inline float-right filter">
+                                                    <div class="form-row">
+                                                        <div class="col">
+                                                            <div class="float-right">
+                                                                <select class="form-control mt-2"
+                                                                    name="term_id">
+                                                                    <option value="">By Term</option>
+                                                                    {% for term in terms %}
+                                                                    <option value="{{term.id}}" {% if c == active_term.id %}
+                                                                        selected {% endif %}>{{term}}</option>
+                                                                    {% endfor %}
+                                                                </select>
+                                                                &nbsp;<select class="form-control mt-2"
+                                                                name="course_id">
+                                                                <option value="">By Course</option>
+                                                                {% for course in courses %}
+                                                                <option value="{{course.id}}">{{course}}</option>
+                                                                {% endfor %}
+                                                            </select>
+                                                            </div>
+
+                                                        </div>
+                                                    </div>
+                                                </form>
+
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <table id="records_class_sections" class="table table-striped responsive" style="width:100%">
+                                    <thead>
+                                        <tr>
+                                            <th data-data="term.code" data-name="term.code">Term
+                                            </th>
+                                            <th data-data="highschool.name" data-name="highschool.name">High School
+                                            </th>
+                                            <th data-name="course.name"
+                                                data-data="course.name">Course</th>
+                                            </th>
+                                            <th data-data="teacher" data-name="teacher.user.last_name">Instructor
+                                            </th>
+                                            <th data-data="period_time" data-name='period_time'>Class Period</th>
+
+                                            <th data-data="id" data-name='id'>Visit(s)</th>
+                                        </tr>
+                                    </thead>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <!-- end tab # records_class_sections -->
+
+                </div>
+                <!-- end tab-content -->
+
+                <script>
+                    var table, tbl_class_sections;
+                    setInterval(function() {
+
+                        if(!table.rows('.selected').any())
+                            table.ajax.reload(null, false);
+                    }, 5000 * 60);
+
+                    $(document).ready(function () {
+
+                        let section_baseURL = '{{class_sections_api_url}}';
+                        
+                        $(document).on("change", "form#class_section_filter :input", function () {
+                            load_class_section_data();
+                        })
+
+                        function load_class_section_data() {
+                            let form = $('form#class_section_filter')
+                            let newURL = section_baseURL + '&' + $(form).serialize();
+
+                            tbl_class_sections.ajax.url(newURL).load()
+                        }
+
+                        tbl_class_sections = $("#records_class_sections")
+                           .DataTable({
+                                "fnDrawCallback": function( oSettings ) {
+                                    $.unblockUI();
+                                },
+                                'orderCellsTop': true,
+                                'fixedHeader': true,
+                                order: [[0, 'desc']],
+                                ajax: section_baseURL,
+                                serverSide: true,
+                                processing: true,
+                                language: {
+                                    'loadingRecords': '&nbsp;',
+                                },
+                                'lengthMenu': [30, 50, 100],
+                                'columns': [
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            return row.term.label
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            if(row.highschool !== null)
+                                                return row.highschool.name
+                                            return ''
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            return row.course.name + "<br><span class='text-muted'>" + row.class_number + ' / ' + row.section_number + "</span>"
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+
+                                            if (row.teacher === null)
+                                                return '';
+                                            return row.teacher.user.last_name + ', ' + row.teacher.user.first_name
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let col = 'Class Period - ';
+                                            if(row.period_time !== null)
+                                                col += row.period_time
+                                            else 
+                                                col += "Not Available"
+
+                                            if(row.syllabi.length > 0)
+                                                col += "<br>"
+
+                                            $(row.syllabi).each(function(k, v) {
+                                                col += "<a href='" + v.media + "'>" + v.filename + "</a>"
+                                            })
+
+                                            return col
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+
+                                            let visits = ''
+                                            $.each(row.visit_schedule, function(index, val) {
+                                                visits += "<a title='Edit' href='#visits' data-src='" + val.ce_url + "' data-target=\"tbl_visits\" class='ajax-add_visit'>" + val.visit_date
+                                                let visitors = "";
+
+                                                $.each(val.visitors, function(index, val2) {
+                                                    
+                                                    visitors += val2.first_name + ' ' + val2.last_name + ", "; 
+                                                });
+
+                                                if(visitors) {
+                                                    visits += " by " + visitors.substr(0, visitors.length - 2);
+                                                }
+
+                                                visits += "&nbsp;<i class='fas fa-pencil-alt'></i></a><br>";
+                                            });
+
+                                            if(visits != '')
+                                                visits += "<br>"
+
+                                            let add_visit = '<a href="#visits" class="btn btn-sm btn-info ajax-add_visit" data-src="/faculty/class_visits/visits/manage_visit/' + row.id + '" data-target="table,tbl_class_sections"                 data-parent="' + row.id + '"><i  class="fa fas-light fa-plus-circle"></i>&nbsp;Add New Visit</a>';
+
+                                            return visits + add_visit;
+                                        } 
+                                    }
+                                ]
+                            }   
+                        )
+
+                        window.closeVisitModal = function() {
+                            $('#visit_modal').modal('hide');
+
+                            table.ajax.reload(null, false);
+                            tbl_class_sections.ajax.reload(null, false);
+                        };
+
+                        $(document).on('click', 'a.ajax-add_visit', function(event) {
+                            var src = $(this).attr('data-src');
+
+                            $("#details_src").attr('src', src);
+                            $("#details_src").attr('refresh-target', $(this).attr('refresh-target'));
+                            $('#visit_modal').modal({
+                                show: true,
+                                backdrop: 'static'
+                            });
+
+                            event.preventDefault()
+                            return false;
+                        });
+
+                        let baseURL = '{{api_url}}'
+                        $(document).on("change", "form#visit_filter :input", function () {
+                            load_data();
+                        })
+
+                        function load_data() {
+                            let form = $('form#visit_filter')
+                            let newURL = baseURL + '&' + $(form).serialize();
+
+                            table.ajax.url(newURL).load()
+                        }
+
+
+                        table = $('#records_all')
+                           .DataTable({
+                                "fnDrawCallback": function( oSettings ) {
+                                    $.unblockUI();
+                                },
+                                'orderCellsTop': true,
+                                'fixedHeader': true,
+                                order: [[0, 'desc']],
+                                ajax: '{{api_url}}',
+                                serverSide: true,
+                                processing: true,
+                                language: {
+                                    'loadingRecords': '&nbsp;',
+                                },
+                                'lengthMenu': [30, 50, 100],
+                                'columns': [
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let col = row.visit_date
+                                            
+                                            if(row.payment_status_sexy.toLowerCase() != 'not eligible' && row.payment_status_sexy.toLowerCase() != 'no report found' )
+                                                col += "<br><span class='text-primary'>" + row.payment_status_sexy + "</span>";
+                                            return col
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let term = "";
+
+                                            $.each(row.class_sections, function(index, val) {
+                                                let temp_term = val.term.label
+
+                                                if(term!=temp_term)
+                                                    term = temp_term
+                                            });
+
+                                            return term;
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let hs = "";
+
+                                            $.each(row.class_sections, function(index, val) {
+                                                let temp_hs = '';
+
+                                                if(val.highschool)
+                                                    temp_hs = val.highschool.name
+
+                                                if(hs!=temp_hs)
+                                                    hs = temp_hs
+                                            });
+
+                                            return hs;
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let courses = "";
+
+                                            $.each(row.class_sections, function(index, val) {
+                                                courses += val.course.name + ' (' + val.class_number + '-' + val.section_number + ')' +  "<br>"; 
+                                            });
+
+                                            return courses;
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let visitors = "";
+
+                                            $.each(row.visitors, function(index, val) {
+                                                
+                                                visitors += val.first_name + ' ' + val.last_name + "<br>"; 
+                                            });
+
+                                            return visitors;
+                                        }
+                                    },
+                                    {
+                                        'render': function (data, type, row, meta) {
+                                            let btn_group = "";
+
+                                            let label = 'Add Report'
+                                            if(row.has_started_report == 'True') {
+                                                if(row.has_submitted_report != 'True') {
+                                                    label = 'Edit \'Draft\' Report'
+                                                } else 
+                                                    label = 'Edit Report'
+                                            }
+
+                                            btn_group = '<div class="btn-group btn-group-sm" role="group" aria-label="Edit Visit Schedule & Manage Visit Report">  <a type="button" href="#visits" data-src="/faculty/class_visits/visits/edit_visit_report/' + row.id + '" class="btn btn-sm btn-info ajax-add_visit">' + label + '</a>'
+                                            
+                                            if(label == 'Add Report')
+                                                btn_group += '<div class="btn-group" role="group">   <button id="btnGroupDrop1" type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">Edit Visit Date</button>    <div class="dropdown-menu" aria-labelledby="btnGroupDrop1">      <a class="dropdown-item ajax-add_visit" href=\'#visits\' data-src="' + row.ce_url + '" data-target="tbl_visits"><i class=\'fas fa-edit\'></i>&nbsp;&nbsp;Edit</a><a data-src="' + row.delete_url + '" data-target=\"tbl_visits\" class="dropdown-item ajax-delete_visit" href="#visits"><i class=\'fas fa-trash\'></i>&nbsp;&nbsp;Delete</a></div></div>'
+
+                                            btn_group += '</div>'
+                                            return  btn_group;
+                                        }
+                                    },
+                                ]
+                            }
+                        );
+
+                        // $(document).on('hidden.bs.modal', '#transaction_modal', function (event) {
+                        //     tbl_student_transactions.ajax.reload()
+                        // });
+
+                        // window.closeTransactionModal = function() {
+                        //     $('#transaction_modal').modal('hide');
+                        // };
+                    });
+                </script>
+            </div>
+        </div>
+        
+</main>
+<div id='visit_modal' class='modal fade' role='dialog' tabindex="-1" style>
+    <div class='modal-dialog  modal-dialog-scrollable' style="">
+        <div class='modal-content' style="min-height: 550px;">
+            <div class='modal-body' style="position: relative; min-height: 50%;">
+                <iframe id='details_src' width='100%' height='100%'
+                    style="position:  absolute; height: 96%; width: 97%;" frameborder='0' allowfullscreen></iframe>
+            </div>
+            <div class='modal-footer'>
+              <button type='button' class='close' data-dismiss='modal'>&times;</button>
+          </div>
+
+        </div>
+    </div>
+</div>
+{% endblock %}

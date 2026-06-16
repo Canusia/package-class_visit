@@ -1,0 +1,182 @@
+{% extends "cis/logged-base.html" %}
+{% load templatehelpers %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block body %}
+<main>
+  <div class="row">
+    <div class="col-sm-6">
+      <h1 class="h3 mb-4 text-gray-800">{{ page_title }}</h1>
+    </div>
+  </div>
+
+  {% include "cis/messages.html" with messages=messages %}
+
+  <ul class="nav nav-tabs" id="cvTabs" role="tablist">
+    <li class="nav-item">
+      <a class="nav-link active" data-toggle="tab" href="#tab-all">All Visits</a>
+    </li>
+    <li class="nav-item">
+      <a class="nav-link" data-toggle="tab" href="#tab-not-needed">Not Needed</a>
+    </li>
+  </ul>
+
+  <div class="tab-content">
+
+    {# ===== All Visits tab ===== #}
+    <div class="tab-pane active" id="tab-all">
+      <div class="bg-white border border-top-0 p-3">
+
+        {# Filter bar #}
+        <div class="card mb-3">
+          <div class="card-body bg-gray-200">
+            <form id="frm_visits_filter" class="form-inline float-right">
+              <select class="form-control mr-2" name="term">
+                <option value="">All Terms</option>
+                {% for t in terms %}
+                  <option value="{{ t.id }}" {% if t.id == active_term.id %}selected{% endif %}>
+                    {{ t.label }} {{ t.year }}
+                  </option>
+                {% endfor %}
+              </select>
+              <select class="form-control mr-2" name="course">
+                <option value="">All Courses</option>
+                {% for c in courses %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <select class="form-control mr-2" name="report_status">
+                <option value="">All Statuses</option>
+                <option value="no_report">No Report</option>
+                <option value="Draft">Draft</option>
+                <option value="Submitted">Submitted</option>
+              </select>
+            </form>
+          </div>
+        </div>
+
+        {# Bulk export controls #}
+        <div class="mb-2">
+          <form id="frm_bulk_action" method="post" action="{% url 'class_visit:ce_bulk_action' %}">
+            {% csrf_token %}
+            <input type="hidden" name="action" value="export_pdf">
+            <label class="mr-2">
+              <input type="checkbox" name="public_only" value="1"> Public fields only
+            </label>
+            <button type="submit" class="btn btn-sm btn-secondary">
+              <i class="fas fa-file-pdf"></i>&nbsp;Export Selected Letters (PDF)
+            </button>
+          </form>
+        </div>
+
+        <table id="tbl_visits" class="table table-striped" style="width:100%">
+          <thead>
+            <tr>
+              <th><input type="checkbox" id="chk_all"></th>
+              <th data-data="visit_date" data-name="visit_date">Visit Date</th>
+              <th data-data="type_of_visit" data-name="type_of_visit">Type</th>
+              <th data-data="class_sections" data-name="class_sections">Section(s)</th>
+              <th data-data="teacher_display" data-name="teacher_display">Instructor</th>
+              <th data-data="visitors" data-name="visitors">Visitor(s)</th>
+              <th data-data="report_status" data-name="report_status">Report Status</th>
+              <th data-data="id" data-name="id"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+    {# end tab-all #}
+
+    {# ===== Not Needed tab ===== #}
+    <div class="tab-pane" id="tab-not-needed">
+      <div class="bg-white border border-top-0 p-3">
+
+        <div class="mb-2">
+          <a href="#" class="btn btn-sm btn-primary ajax-open-modal"
+             data-src="{% url 'class_visit:ce_not_needed_picker' %}"
+             data-modal="#nn_modal">
+            <i class="fas fa-plus"></i>&nbsp;Add Section to Not-Needed List
+          </a>
+        </div>
+
+        <div class="card mb-3">
+          <div class="card-body bg-gray-200">
+            <form id="frm_nn_filter" class="form-inline float-right">
+              <select class="form-control mr-2" name="term">
+                <option value="">All Terms</option>
+                {% for t in terms %}
+                  <option value="{{ t.id }}" {% if t.id == active_term.id %}selected{% endif %}>
+                    {{ t.label }} {{ t.year }}
+                  </option>
+                {% endfor %}
+              </select>
+              <select class="form-control mr-2" name="course">
+                <option value="">All Courses</option>
+                {% for c in courses %}
+                  <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+            </form>
+          </div>
+        </div>
+
+        <table id="tbl_not_needed" class="table table-striped" style="width:100%">
+          <thead>
+            <tr>
+              <th data-data="class_section" data-name="class_section">Section</th>
+              <th data-data="added_by_display" data-name="added_by_display">Added By</th>
+              <th data-data="created_at" data-name="created_at">Added On</th>
+              <th data-data="id" data-name="id"><span class="sr-only">Actions</span></th>
+            </tr>
+          </thead>
+        </table>
+      </div>
+    </div>
+    {# end tab-not-needed #}
+
+  </div>{# end tab-content #}
+</main>
+
+{# iframe modal for manage_visit + not_needed_picker #}
+<div id="visit_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-body" style="position:relative; min-height:400px;">
+        <iframe id="visit_modal_src" width="100%" height="100%"
+                style="position:absolute; height:98%; width:97%;"
+                frameborder="0"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div id="nn_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content">
+      <div class="modal-body" style="position:relative; min-height:400px;">
+        <iframe id="nn_modal_src" width="100%" height="100%"
+                style="position:absolute; height:98%; width:97%;"
+                frameborder="0"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+{% load static %}
+<script src="{% static 'class_visit/js/ce_visits.js' %}"></script>
+
+<script>
+var CV_API_URL = "{{ api_url }}";
+var CV_NN_API_URL = "{{ not_needed_api_url }}";
+var CV_NN_ADD_URL = "{% url 'class_visit:ce_not_needed_add' %}";
+var CV_BULK_ACTION_URL = "{% url 'class_visit:ce_bulk_action' %}";
+var CV_CSRFTOKEN = "{{ csrf_token }}";
+</script>
+{% endblock %}

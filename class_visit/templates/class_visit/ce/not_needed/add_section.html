@@ -1,0 +1,85 @@
+{% extends "cis/logged-base-modal.html" %}
+
+{% block body %}
+<h3 class="mb-3">{{ page_title }}</h3>
+
+<div class="mb-3">
+  <form id="frm_nn_picker_filter" class="form-inline">
+    <select name="term" class="form-control mr-2 mb-2">
+      <option value="">All Terms</option>
+      {% for t in terms %}
+        <option value="{{ t.id }}">{{ t.label }} {{ t.year }}</option>
+      {% endfor %}
+    </select>
+    <select name="course" class="form-control mr-2 mb-2">
+      <option value="">All Courses</option>
+      {% for c in courses %}
+        <option value="{{ c.id }}">{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <a href="#" id="btn_apply_nn_filter" class="btn btn-sm btn-secondary mb-2">Filter</a>
+  </form>
+</div>
+
+<table class="table table-sm table-hover">
+  <thead>
+    <tr>
+      <th>Course</th>
+      <th>Section</th>
+      <th>Instructor</th>
+      <th>High School</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sections %}
+    <tr>
+      <td>{{ s.course.name }}</td>
+      <td>{{ s.class_number }}-{{ s.section_number }}</td>
+      <td>{{ s.teacher.user.last_name }}, {{ s.teacher.user.first_name }}</td>
+      <td>{{ s.highschool.name }}</td>
+      <td>
+        <button type="button"
+                class="btn btn-xs btn-primary btn-nn-add"
+                data-section-id="{{ s.id }}">
+          Add
+        </button>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="5" class="text-muted">No eligible sections found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+
+<script>
+$(document).ready(function () {
+    $(document).on('click', '.btn-nn-add', function () {
+        var sectionId = $(this).data('section-id');
+        var btn = $(this);
+        $.post(window.parent.CV_NN_ADD_URL, {
+            class_section_id: sectionId,
+            csrfmiddlewaretoken: window.parent.CV_CSRFTOKEN,
+        }, function (resp) {
+            if (resp.success) {
+                btn.closest('tr').fadeOut();
+                window.parent.closeNNModal();
+                window.parent.tbl_not_needed && window.parent.tbl_not_needed.ajax.reload(null, false);
+            } else {
+                swal('', resp.message, 'warning');
+            }
+        }, 'json').fail(function () {
+            swal('Error', 'Could not add section.', 'error');
+        });
+    });
+
+    $('#btn_apply_nn_filter').on('click', function (e) {
+        e.preventDefault();
+        var term = $('select[name=term]').val();
+        var course = $('select[name=course]').val();
+        var url = window.location.pathname + '?term_id=' + term + '&course_id=' + course;
+        window.location.href = url;
+    });
+});
+</script>
+{% endblock %}

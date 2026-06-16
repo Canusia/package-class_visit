@@ -1,0 +1,37 @@
+{% extends "instructor/base_instructor.html" %}
+
+{% block title %}Visit Report{% endblock %}
+
+{% block content %}
+<div class="card shadow mb-4">
+  <div class="card-header py-3">
+    <h6 class="m-0 font-weight-bold text-primary">
+      Visit Report — {{ visit.visit_date_sexy }}
+    </h6>
+  </div>
+  <div class="card-body">
+
+    {% if public_values %}
+      <table class="table table-sm table-bordered">
+        <tbody>
+          {% for item in public_values %}
+          <tr>
+            <th class="w-25">{{ item.label }}</th>
+            <td>{{ item.value|safe }}</td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    {% else %}
+      <div class="alert alert-info">
+        The visit report is not available yet. Please check back once the faculty
+        coordinator has submitted the report.
+      </div>
+    {% endif %}
+
+    <a href="{% url 'instructor_class_visit:index' %}" class="btn btn-secondary btn-sm mt-3">
+      &larr; Back to My Visits
+    </a>
+  </div>
+</div>
+{% endblock %}

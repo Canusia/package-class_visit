@@ -1,0 +1,60 @@
+{% extends "cis/logged-base.html" %}
+{% load templatehelpers %}
+
+{% block title %}{{ page_title }}{% endblock %}
+
+{% block body %}
+<main>
+  <div class="row mb-3">
+    <div class="col">
+      <h1 class="h3 text-gray-800">{{ page_title }}</h1>
+      <a href="{% url 'class_visit:ce_index' %}" class="btn btn-sm btn-outline-secondary">
+        &larr; Back to Visits
+      </a>
+    </div>
+  </div>
+
+  <div class="card mb-4">
+    <div class="card-header"><strong>Visit Details</strong></div>
+    <div class="card-body">
+      <dl class="row">
+        <dt class="col-sm-3">Visit Date</dt>
+        <dd class="col-sm-9">{{ visit.visit_date|date:"m/d/Y" }}</dd>
+        <dt class="col-sm-3">Type of Visit</dt>
+        <dd class="col-sm-9">{{ visit.type_of_visit }}</dd>
+        <dt class="col-sm-3">Instructor</dt>
+        <dd class="col-sm-9">{{ visit.teacher }}</dd>
+        <dt class="col-sm-3">Class Section(s)</dt>
+        <dd class="col-sm-9">{{ visit.class_sections_sexy|safe }}</dd>
+        <dt class="col-sm-3">Visitor(s)</dt>
+        <dd class="col-sm-9">{{ visit.visitors_sexy|safe }}</dd>
+      </dl>
+    </div>
+  </div>
+
+  {% if report %}
+  <div class="card mb-4">
+    <div class="card-header">
+      <strong>Visit Report</strong>
+      <span class="badge badge-{% if report.status == 'Submitted' %}success{% else %}warning{% endif %} ml-2">
+        {{ report.status }}
+      </span>
+    </div>
+    <div class="card-body">
+      {% if report_fields %}
+        <dl class="row">
+          {% for field in report_fields %}
+            <dt class="col-sm-3">{{ field.label }}</dt>
+            <dd class="col-sm-9">{{ field.value|safe }}</dd>
+          {% endfor %}
+        </dl>
+      {% else %}
+        <p class="text-muted">No report fields configured.</p>
+      {% endif %}
+    </div>
+  </div>
+  {% else %}
+  <div class="alert alert-info">No report has been submitted for this visit.</div>
+  {% endif %}
+</main>
+{% endblock %}
