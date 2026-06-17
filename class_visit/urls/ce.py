@@ -10,7 +10,7 @@ from rest_framework.routers import DefaultRouter
 
 from cis.utils import user_has_cis_role
 
-from class_visit.class_visit.views.ce import (
+from ..views.ce import (
     CEVisitScheduleViewSet,
     CENotNeededVisitViewSet,
     index,

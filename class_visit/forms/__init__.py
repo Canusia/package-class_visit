@@ -21,7 +21,7 @@ from cis.utils import (
     active_term as get_active_term
 )
 
-from class_visit.class_visit.models import VisitSchedule, VisitReport, VisitReportFile
+from ..models import VisitSchedule, VisitReport, VisitReportFile
 
 class VisitScheduleForm(forms.Form):
 

@@ -38,7 +38,7 @@ class ClassVisitConfig(AppConfig):
 
     CONFIGURATORS = [
         {
-            'app': 'class_visit.class_visit',
+            'app': 'class_visit',
             'name': 'class_visit',
             'title': 'Class Visit Settings',
             'description': '-',
@@ -52,13 +52,16 @@ class ClassVisitConfig(AppConfig):
     ]
 
     def ready(self):
-        import class_visit.signals  # noqa
+        from . import signals  # noqa
 
 
 class DevClassVisitConfig(AppConfig):
     name = 'class_visit.class_visit'
 
-    CONFIGURATORS = ClassVisitConfig.CONFIGURATORS
+    CONFIGURATORS = [
+        {**c, 'app': 'class_visit.class_visit'}
+        for c in ClassVisitConfig.CONFIGURATORS
+    ]
 
     REPORTS = [
         {**entry, 'app': 'class_visit.class_visit'}
@@ -66,4 +69,4 @@ class DevClassVisitConfig(AppConfig):
     ]
 
     def ready(self):
-        import class_visit.class_visit.signals  # noqa
+        from . import signals  # noqa

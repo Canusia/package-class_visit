@@ -9,7 +9,7 @@ from rest_framework import routers
 
 from cis.utils import user_has_faculty_role
 
-from class_visit.class_visit.views.faculty import (
+from ..views.faculty import (
     FacultySchedulableSectionViewSet,
     FacultyVisitScheduleViewSet,
     index,

@@ -15,7 +15,7 @@ from mailer import send_html_mail
 
 def _get_settings() -> dict:
     """Thin wrapper so tests can patch without importing the class."""
-    from class_visit.class_visit.settings.class_visit import class_visit as CVSettings
+    from ..settings.class_visit import class_visit as CVSettings
     return CVSettings.from_db()
 
 
@@ -84,7 +84,7 @@ def notify_teacher_visit_scheduled(visit_schedule) -> None:
 
     confirm_link = ''
     if cfg.get('instructor_confirm_link', 'No') == 'Yes':
-        from class_visit.class_visit.services.confirmation import confirmation_url
+        from ..services.confirmation import confirmation_url
         confirm_link = confirmation_url(visit_schedule)
 
     ctx = {
@@ -104,7 +104,7 @@ def notify_teacher_visit_scheduled(visit_schedule) -> None:
     send_app_email(subject, message, visit_schedule.instructor_emails)
 
     # Record sent timestamp
-    from class_visit.class_visit.models import VisitSchedule
+    from ..models import VisitSchedule
     VisitSchedule.objects.filter(pk=visit_schedule.pk).update(
         meta={**visit_schedule.meta, 'instructor_email_sent_on': datetime.datetime.now().strftime('%m/%d/%Y')}
     )
@@ -184,7 +184,7 @@ def notify_notification_target(visit_report) -> None:
     send_app_email(subject, message, recipients)
 
     # Record sent timestamp
-    from class_visit.class_visit.models import VisitReport
+    from ..models import VisitReport
     VisitReport.objects.filter(pk=visit_report.pk).update(
         meta={**visit_report.meta, 'course_admin_email_sent_on': datetime.datetime.now().strftime('%m/%d/%Y')}
     )
@@ -213,7 +213,7 @@ def remind_visitor_report_pending(visit_schedule) -> None:
         recipients.append(visitor.email)
 
     if recipients:
-        from class_visit.class_visit.models import VisitSchedule
+        from ..models import VisitSchedule
         VisitSchedule.objects.filter(pk=visit_schedule.pk).update(
             meta={**visit_schedule.meta, 'reminder_last_sent_on': datetime.datetime.now().strftime('%m/%d/%Y')}
         )

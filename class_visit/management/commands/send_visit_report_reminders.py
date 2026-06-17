@@ -15,7 +15,7 @@ import logging
 from django.core.management.base import BaseCommand
 
 from cis.signals.crontab import cron_task_done, cron_task_started
-from class_visit.class_visit.models import VisitSchedule
+from ...models import VisitSchedule
 
 logger = logging.getLogger(__name__)
 

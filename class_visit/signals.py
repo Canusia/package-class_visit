@@ -3,7 +3,7 @@ from django.conf import settings  # noqa: F401 (kept for legacy compat)
 from django.db.models.signals import pre_save
 from django.dispatch import receiver
 
-from class_visit.models import VisitReport
+from .models import VisitReport
 
 
 @receiver(pre_save, sender=VisitReport)

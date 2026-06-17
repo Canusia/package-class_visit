@@ -473,7 +473,7 @@ class VisitReportFile(models.Model):
 
 def _get_cv_settings() -> dict:
     """Thin wrapper so tests can patch without importing the settings class."""
-    from class_visit.class_visit.settings.class_visit import class_visit as CVSettings
+    from .settings.class_visit import class_visit as CVSettings
     return CVSettings.from_db()
 
 
@@ -483,7 +483,7 @@ def _remind_visitor_report_pending(visit_schedule) -> None:
     'class_visit.class_visit.models._remind_visitor_report_pending' without
     triggering circular imports.
     """
-    from class_visit.class_visit.services.emails import remind_visitor_report_pending
+    from .services.emails import remind_visitor_report_pending
     remind_visitor_report_pending(visit_schedule)
 
 

@@ -9,7 +9,7 @@ from cis.serializers.highschool import HighSchoolSerializer
 from cis.serializers.teacher import TeacherSerializer, CustomUserSerializer
 from cis.serializers.term import TermSerializer
 
-from class_visit.class_visit.models import VisitSchedule
+from ..models import VisitSchedule
 
 
 class _MinimalVisitScheduleSerializer(serializers.ModelSerializer):

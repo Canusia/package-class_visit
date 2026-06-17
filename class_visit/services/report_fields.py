@@ -18,7 +18,7 @@ from django import forms
 
 def _get_settings() -> dict:
     """Thin wrapper so tests can patch it without importing the settings class."""
-    from class_visit.class_visit.settings.class_visit import class_visit as CVSettings
+    from ..settings.class_visit import class_visit as CVSettings
     return CVSettings.from_db()
 
 

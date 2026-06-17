@@ -11,7 +11,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
 from cis.models.term import Term
-from class_visit.class_visit.services.report_fields import get_report_field_defs
+from ..services.report_fields import get_report_field_defs
 
 
 class visit_reports(forms.Form):
@@ -66,7 +66,7 @@ class visit_reports(forms.Form):
         return static + dynamic
 
     def _get_queryset(self, data):
-        from class_visit.class_visit.models import VisitReport
+        from ..models import VisitReport
 
         qs = VisitReport.objects.filter(
             status='Submitted',

@@ -74,7 +74,7 @@ class pending_visit_reports(forms.Form):
         return [visit_date_str, visit.type_of_visit, days_past, crns, teacher_name, visitors, status]
 
     def _get_queryset(self, data):
-        from class_visit.class_visit.models import VisitSchedule
+        from ..models import VisitSchedule
 
         today = datetime.date.today()
 

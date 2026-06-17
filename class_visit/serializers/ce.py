@@ -5,7 +5,7 @@ from django.urls import reverse
 from cis.serializers.class_section import ClassSectionSerializer
 from cis.serializers.highschool_admin import CustomUserSerializer
 
-from class_visit.class_visit.models import VisitSchedule, NotNeededVisit
+from ..models import VisitSchedule, NotNeededVisit
 
 
 class CEVisitScheduleSerializer(serializers.ModelSerializer):

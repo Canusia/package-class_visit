@@ -13,7 +13,7 @@ import pdfkit
 
 from django.template.loader import get_template
 
-from class_visit.class_visit.services.report_fields import report_values_for_display
+from ..services.report_fields import report_values_for_display
 
 
 def _build_letter_html(visit_report, public_only: bool = False) -> str:

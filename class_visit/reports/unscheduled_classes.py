@@ -78,8 +78,8 @@ class unscheduled_classes(forms.Form):
         ]
 
     def _get_queryset(self, data):
-        from class_visit.class_visit.models import VisitSchedule, NotNeededVisit
-        from class_visit.class_visit.settings.class_visit import class_visit as cv_settings
+        from ..models import VisitSchedule, NotNeededVisit
+        from ..settings.class_visit import class_visit as cv_settings
         from cis.models.section import ClassSection
 
         config = cv_settings.from_db()

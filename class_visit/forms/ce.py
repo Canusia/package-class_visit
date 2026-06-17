@@ -7,8 +7,8 @@ from cis.models.section import ClassSection
 from cis.models.customuser import CustomUser
 from cis.models.course import CourseAdministrator
 
-from class_visit.class_visit.models import VisitSchedule
-from class_visit.class_visit.settings.class_visit import class_visit as ClassVisitSettings
+from ..models import VisitSchedule
+from ..settings.class_visit import class_visit as ClassVisitSettings
 
 
 def _visit_type_choices(settings_dict):
@@ -165,7 +165,7 @@ class CEVisitScheduleForm(forms.Form):
         return ids
 
     def save(self, request=None, commit=True):
-        from class_visit.class_visit.services import emails as email_service
+        from ..services import emails as email_service
 
         data = self.cleaned_data
         visit_id = data.get('visit_id') or '-1'

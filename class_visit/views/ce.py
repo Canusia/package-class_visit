@@ -15,14 +15,14 @@ from cis.models.section import ClassSection
 from cis.models.term import Term
 from cis.utils import CIS_user_only, active_term, user_has_cis_role
 
-from class_visit.class_visit.forms.ce import CEVisitScheduleForm
-from class_visit.class_visit.models import NotNeededVisit, VisitReport, VisitSchedule
-from class_visit.class_visit.serializers.ce import (
+from ..forms.ce import CEVisitScheduleForm
+from ..models import NotNeededVisit, VisitReport, VisitSchedule
+from ..serializers.ce import (
     CENotNeededVisitSerializer,
     CEVisitScheduleSerializer,
 )
-from class_visit.class_visit.services import pdf as pdf_service
-from class_visit.class_visit.services import report_fields
+from ..services import pdf as pdf_service
+from ..services import report_fields
 
 logger = logging.getLogger(__name__)
 

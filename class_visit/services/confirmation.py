@@ -31,7 +31,7 @@ def confirm_visit(token: str):
 
     Sets meta['confirmed_on'] to today's date string (m/d/Y).
     """
-    from class_visit.class_visit.models import VisitSchedule
+    from ..models import VisitSchedule
 
     try:
         vs = VisitSchedule.objects.get(meta__confirmation_token=token)

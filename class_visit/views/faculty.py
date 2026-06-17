@@ -16,15 +16,15 @@ from cis.models.term import Term
 from cis.utils import FACULTY_user_only, active_term as get_active_term
 from cis.menu import draw_menu
 
-from class_visit.class_visit.models import VisitSchedule, VisitReport, NotNeededVisit
-from class_visit.class_visit.settings.class_visit import class_visit as ClassVisitSettings
-from class_visit.class_visit.forms.faculty import VisitScheduleForm, VisitReportDynamicForm
-from class_visit.class_visit.serializers.faculty import (
+from ..models import VisitSchedule, VisitReport, NotNeededVisit
+from ..settings.class_visit import class_visit as ClassVisitSettings
+from ..forms.faculty import VisitScheduleForm, VisitReportDynamicForm
+from ..serializers.faculty import (
     FacultySchedulableSectionSerializer,
     FacultyVisitScheduleSerializer,
 )
-from class_visit.class_visit.services import emails, report_fields
-from class_visit.class_visit.services import pdf as pdf_service
+from ..services import emails, report_fields
+from ..services import pdf as pdf_service
 
 logger = logging.getLogger(__name__)
 

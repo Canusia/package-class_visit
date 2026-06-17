@@ -7,9 +7,9 @@ from cis.models.section import ClassSection
 from cis.models.course import CourseAdministrator
 from cis.models.customuser import CustomUser
 
-from class_visit.class_visit.models import VisitSchedule, VisitReport, NotNeededVisit
-from class_visit.class_visit.settings.class_visit import class_visit as ClassVisitSettings
-from class_visit.class_visit.services import report_fields
+from ..models import VisitSchedule, VisitReport, NotNeededVisit
+from ..settings.class_visit import class_visit as ClassVisitSettings
+from ..services import report_fields
 
 
 def _status_filter_to_db(section_status_filter: str):
@@ -194,7 +194,7 @@ class VisitScheduleForm(forms.Form):
         Returns:
             The saved VisitSchedule instance.
         """
-        from class_visit.class_visit.services import emails as email_service
+        from ..services import emails as email_service
 
         data = self.cleaned_data
 
@@ -268,8 +268,8 @@ class VisitReportDynamicForm(forms.Form):
         Returns:
             VisitReport instance.
         """
-        from class_visit.class_visit.services import emails as email_service
-        from class_visit.class_visit.settings.class_visit import class_visit as CVSettings
+        from ..services import emails as email_service
+        from ..settings.class_visit import class_visit as CVSettings
 
         settings_obj = CVSettings.from_db()
         data = self.cleaned_data
