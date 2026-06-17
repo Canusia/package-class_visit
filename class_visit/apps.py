@@ -52,7 +52,7 @@ class ClassVisitConfig(AppConfig):
     ]
 
     def ready(self):
-        import class_visit.class_visit.signals  # noqa
+        import class_visit.signals  # noqa
 
 
 class DevClassVisitConfig(AppConfig):
