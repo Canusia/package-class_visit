@@ -111,7 +111,7 @@ class Migration(migrations.Migration):
 
     dependencies = [
         ('class_visit', '0007_migrate_class_visit_emails_settings'),
-        ('cis', '__latest__'),
+        ('cis', '__first__'),
     ]
 
     operations = [
