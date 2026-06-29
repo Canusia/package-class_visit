@@ -14,7 +14,7 @@ This data migration makes the Class Visits links appear without manual config:
 
 Idempotent: re-running makes no further changes. No-ops if the menu Setting row
 doesn't exist yet (e.g. before ``register_settings`` has run on a fresh install).
-Depends on cis ``__latest__`` so the ``Setting`` model is present (tenant-portable).
+Depends on cis ``__first__`` so the ``Setting`` model is present (tenant-portable).
 """
 import json
 
