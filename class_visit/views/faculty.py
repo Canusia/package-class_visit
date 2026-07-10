@@ -71,7 +71,7 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
             id__in=not_needed_section_ids,
         ).select_related(
             'teacher__user', 'course', 'term', 'highschool', 'campus', 'location',
-        ).prefetch_related('syllabi', 'visitschedule_set')
+        ).prefetch_related('visitschedule_set')
 
         # Optional filters from DataTables URL params
         term_id = self.request.GET.get('term_id')
