@@ -77,6 +77,20 @@ class ManageVisitSectionScopeTest(TestCase):
         self.assertEqual(form.fields['class_sections'].initial, [str(self.sec_a1.id)])
 
     @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    def test_template_renders_form_with_crispy(self, MockSettings):
+        from django.template.loader import render_to_string
+        MockSettings.from_db.return_value = {
+            'section_status_filter': 'active', 'visit_types': 'Observation'}
+        form = VisitScheduleForm(
+            faculty_user=self.faculty, anchor_section=self.sec_a1)
+        html = render_to_string(
+            'class_visit/faculty/manage_visit.html',
+            {'form': form, 'page_title': 'Schedule / Edit Visit'})
+        self.assertIn('id="manage_visit_form"', html)
+        self.assertIn('form-group', html)              # crispy bootstrap4 wrapper
+        self.assertIn('name="class_sections"', html)
+
+    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
     def test_without_anchor_all_overseen_sections_offered(self, MockSettings):
         MockSettings.from_db.return_value = {
             'section_status_filter': 'active', 'visit_types': 'Observation'}
