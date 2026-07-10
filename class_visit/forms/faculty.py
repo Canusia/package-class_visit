@@ -61,15 +61,20 @@ class VisitScheduleForm(forms.Form):
         widget=forms.Textarea(attrs={'rows': 3}),
     )
 
-    def __init__(self, faculty_user, visit_schedule=None, *args, **kwargs):
+    def __init__(self, faculty_user, visit_schedule=None, anchor_section=None,
+                 *args, **kwargs):
         """
         Args:
             faculty_user: The logged-in CustomUser with the faculty role.
             visit_schedule: Existing VisitSchedule instance for edit, or None for create.
+            anchor_section: The ClassSection the visit is being managed from. When
+                given, the selectable sections are limited to the same course
+                taught by the same instructor as this section.
         """
         super().__init__(*args, **kwargs)
         self._faculty_user = faculty_user
         self._visit_schedule = visit_schedule
+        self._anchor_section = anchor_section
         self._settings = ClassVisitSettings.from_db()
 
         # Populate visit_types choices from settings
@@ -97,6 +102,16 @@ class VisitScheduleForm(forms.Form):
             course__id__in=course_ids,
             status__in=allowed_status_codes,
         ).select_related('teacher__user', 'course', 'term', 'highschool')
+
+        # Anchor: limit choices to the same course taught by the same instructor
+        # as the section the visit is being managed from (a visit's sections must
+        # share one instructor).
+        if anchor_section is not None:
+            sections_qs = sections_qs.filter(
+                course_id=anchor_section.course_id,
+                teacher_id=anchor_section.teacher_id,
+            )
+
         sections = list(sections_qs)
 
         not_needed_ids = set(
@@ -143,6 +158,9 @@ class VisitScheduleForm(forms.Form):
             self.fields['visitors'].initial = [
                 str(u.id) for u in visit_schedule.visitors.all()
             ]
+        elif anchor_section is not None:
+            # New visit: pre-select the section it was launched from.
+            self.fields['class_sections'].initial = [str(anchor_section.id)]
 
     def clean_class_sections(self):
         """Validate teacher-match, not-needed, and status constraints."""

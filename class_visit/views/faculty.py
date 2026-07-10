@@ -141,10 +141,15 @@ def manage_visit(request, class_section_id, visit_id=None):
     if visit_id:
         visit_schedule = get_object_or_404(VisitSchedule, pk=visit_id)
 
+    # The visit is anchored to the section the faculty clicked from; the section
+    # options are limited to that section's course taught by the same instructor.
+    anchor_section = get_object_or_404(ClassSection, pk=class_section_id)
+
     if request.method == 'POST':
         form = VisitScheduleForm(
             faculty_user=request.user,
             visit_schedule=visit_schedule,
+            anchor_section=anchor_section,
             data=request.POST,
         )
         if form.is_valid():
@@ -168,6 +173,7 @@ def manage_visit(request, class_section_id, visit_id=None):
     form = VisitScheduleForm(
         faculty_user=request.user,
         visit_schedule=visit_schedule,
+        anchor_section=anchor_section,
     )
     return render(request, template, {
         'form': form,

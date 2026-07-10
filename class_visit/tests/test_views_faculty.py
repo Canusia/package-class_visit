@@ -87,10 +87,12 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
 class NotifyOnScheduleTest(TestCase):
     """Scheduling a visit fires notify_teacher_visit_scheduled when setting is Yes."""
 
+    @patch('class_visit.class_visit.views.faculty.get_object_or_404')
     @patch('class_visit.class_visit.views.faculty.emails')
     @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
     @patch('class_visit.class_visit.views.faculty.VisitScheduleForm')
-    def test_notify_called_when_setting_yes(self, MockForm, MockSettings, MockEmails):
+    def test_notify_called_when_setting_yes(
+        self, MockForm, MockSettings, MockEmails, MockGetObj):
         MockSettings.from_db.return_value = {
             'notify_teacher_on_schedule': 'Yes',
             'section_status_filter': 'active',
