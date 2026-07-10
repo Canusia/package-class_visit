@@ -459,3 +459,42 @@ class BulkExportPDFTest(TestCase):
             data={'action': 'export_pdf', 'ids[]': [str(uuid.uuid4())]},
         )
         self.assertIn(resp.status_code, [302, 403])
+
+
+# ---------------------------------------------------------------------------
+# Regression: the index page must render the DataTable init JS.
+# base_instructor.html previously rendered {% block extra_css %} but NOT
+# {% block extra_js %}, so instructor_visits.js (which calls .DataTable) was
+# silently dropped and the table stayed empty ("no visits").
+# ---------------------------------------------------------------------------
+class InstructorIndexRendersTableJsTest(TestCase):
+    @classmethod
+    def setUpClass(cls):
+        if _login_history_post_login is not None:
+            user_logged_in.disconnect(_login_history_post_login)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        if _login_history_post_login is not None:
+            user_logged_in.connect(_login_history_post_login)
+
+    def test_index_renders_datatable_init_js(self):
+        from cis.models.teacher import Teacher
+        sfx = uuid.uuid4().hex[:8]
+        user = User.objects.create_user(
+            username=f'inst_{sfx}', email=f'inst_{sfx}@x.com', password='x')
+        user.groups.add(Group.objects.get_or_create(name='instructor')[0])
+        Teacher.objects.create(user=user)
+
+        client = Client(REMOTE_ADDR='127.0.0.1')
+        client.force_login(user)
+        resp = client.get(reverse('instructor_class_visit:index'))
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        # The extra_js block must render so the table actually initializes.
+        self.assertIn('instructor_visits.js', html)
+        self.assertIn('CV_API_URL', html)
+        # The old broken static path must be gone.
+        self.assertNotIn('datatables/datatables.min.js', html)

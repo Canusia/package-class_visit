@@ -3,9 +3,7 @@
 
 {% block title %}My Class Visits{% endblock %}
 
-{% block extra_css %}
-<link rel="stylesheet" href="{% static 'datatables/datatables.min.css' %}">
-{% endblock %}
+{# DataTables JS/CSS are loaded globally by cis/header-includes.html #}
 
 {% block content %}
 <div class="card shadow mb-4">
@@ -43,10 +41,9 @@
 {% endblock %}
 
 {% block extra_js %}
-<script src="{% static 'datatables/datatables.min.js' %}"></script>
-<script src="{% static 'class_visit/js/instructor_visits.js' %}"></script>
 <script>
   var CV_API_URL = "{{ api_url }}";
   var CV_BULK_URL = "{{ bulk_url }}";
 </script>
+<script src="{% static 'class_visit/js/instructor_visits.js' %}"></script>
 {% endblock %}
