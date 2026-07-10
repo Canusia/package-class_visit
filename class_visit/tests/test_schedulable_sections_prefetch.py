@@ -18,7 +18,11 @@ from cis.models.term import AcademicYear, Term
 from cis.models.course import Cohort, Course, CourseAdministrator
 from cis.models.section import ClassSection
 
-from class_visit.class_visit.views.faculty import FacultySchedulableSectionViewSet
+from class_visit.class_visit.models import VisitSchedule
+from class_visit.class_visit.views.faculty import (
+    FacultySchedulableSectionViewSet,
+    FacultyVisitScheduleViewSet,
+)
 
 User = get_user_model()
 
@@ -56,3 +60,37 @@ class SchedulableSectionPrefetchTest(TestCase):
         # Forcing evaluation is what raised the ValueError before the fix.
         result = list(vs.get_queryset())
         self.assertIn(section, result)
+
+
+class VisitSchedulePrefetchTest(TestCase):
+    """The visit_schedule API prefetched 'class_sections__syllabi' (a property,
+    not a relation) and crashed on evaluation. Real-DB regression."""
+
+    def test_get_queryset_evaluates_without_syllabi_prefetch_error(self):
+        faculty = User.objects.create_user(
+            username=f'fac_{_sfx()}', email=f'fac_{_sfx()}@x.com', password='x')
+        faculty.groups.add(Group.objects.get_or_create(name='faculty')[0])
+
+        ay = AcademicYear.objects.create(name=f'AY-{_sfx()}')
+        term = Term.objects.create(academic_year=ay, code='FA', label=f'Fall-{_sfx()}')
+        cohort = Cohort.objects.create(name=f'Co-{_sfx()}', designator='CO')
+        course = Course.objects.create(
+            catalog_number='101', title='Intro', cohort=cohort)
+        section = ClassSection.objects.create(
+            class_number='1001', term=term, course=course, status='A')
+        CourseAdministrator.objects.create(
+            user=faculty, course=course, role='Faculty', status='Active')
+
+        visit = VisitSchedule.objects.create()
+        visit.class_sections.add(section)
+        visit.visitors.add(faculty)
+
+        vs = FacultyVisitScheduleViewSet()
+        req = RequestFactory().get('/faculty/class_visits/api/visit_schedule/')
+        req.user = faculty
+        vs.request = req
+        vs.format_kwarg = None
+        vs.kwargs = {}
+
+        result = list(vs.get_queryset())
+        self.assertIn(visit, result)

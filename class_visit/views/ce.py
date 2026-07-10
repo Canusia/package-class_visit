@@ -46,7 +46,6 @@ class CEVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
             'class_sections__location',
             'class_sections__term',
             'class_sections__registration_term',
-            'class_sections__syllabi',
             'class_sections__co_reqs',
             'class_sections__teacher__user',
             'visitors',
