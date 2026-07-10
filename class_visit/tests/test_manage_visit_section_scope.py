@@ -5,9 +5,11 @@ instructor). Without an anchor, all overseen sections are offered (unchanged).
 import uuid
 from unittest.mock import patch
 
+from django import forms as djforms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
-from django.test import TestCase
+from django.template.loader import render_to_string
+from django.test import TestCase, SimpleTestCase
 
 from cis.models.term import AcademicYear, Term
 from cis.models.course import Cohort, Course, CourseAdministrator
@@ -101,3 +103,25 @@ class ManageVisitSectionScopeTest(TestCase):
             {str(self.sec_a1.id), str(self.sec_a2.id),
              str(self.sec_a3.id), str(self.sec_b1.id)},
         )
+
+
+class ReportTemplateRenderTest(SimpleTestCase):
+    """The add/edit report form renders with crispy + the app CSS (no DB)."""
+
+    @patch('class_visit.class_visit.forms.faculty.report_fields.build_report_form_fields')
+    def test_report_template_renders_with_crispy(self, mock_build):
+        from class_visit.class_visit.forms.faculty import VisitReportDynamicForm
+        mock_build.return_value = {
+            'summary': djforms.CharField(label='Summary', widget=djforms.Textarea),
+        }
+        form = VisitReportDynamicForm(visit=None)
+        html = render_to_string(
+            'class_visit/faculty/edit_visit_report.html',
+            {'form': form, 'page_title': 'Class Visit Report'})
+        self.assertIn('id="report_form"', html)
+        self.assertIn('form-group', html)             # crispy styled the dynamic field
+        self.assertIn('name="submit_action"', html)   # hidden action field present
+        self.assertIn('Submit Report', html)
+        self.assertIn('Save as Draft', html)
+        # app CSS is wired (so crispy classes actually render)
+        self.assertIn('sb-admin-2.min.css', html)

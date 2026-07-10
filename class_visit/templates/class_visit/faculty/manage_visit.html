@@ -2,24 +2,41 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>{{ page_title }}</title>
   {% load static %}
   {% load crispy_forms_tags %}
-  <link rel="stylesheet" href="{% static 'css/bootstrap.min.css' %}">
-  <link rel="stylesheet" href="{% static 'css/all.min.css' %}">
+  <!-- Same CSS the host app loads (cis/base.html) so the form matches the
+       app's Bootstrap 4 theme. The previous css/bootstrap.min.css /
+       css/all.min.css static paths do not exist, so the page was unstyled. -->
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+  <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
 </head>
-<body class="p-3">
-  <h5>{{ page_title }}</h5>
-
-  <form id="manage_visit_form" method="post">
-    {% csrf_token %}
-    {{ form|crispy }}
-    <button type="submit" class="btn btn-primary">Save Visit</button>
-  </form>
+<body class="bg-white">
+  <div class="card border-0">
+    <div class="card-body">
+      <h3 class="card-title">{{ page_title }}</h3>
+      <div class="card-text">
+        <form id="manage_visit_form" method="post">
+          {% csrf_token %}
+          {{ form|crispy }}
+          <input type="submit" class="btn btn-primary btn-sm" value="Save Visit">
+          <button type="button" id="cancel_visit" class="btn btn-sm">Cancel &amp; Close</button>
+        </form>
+      </div>
+    </div>
+  </div>
 
   <script>
   (function() {
     var form = document.getElementById('manage_visit_form');
+    function closeModal() {
+      if (window.parent && window.parent.closeVisitModal) {
+        window.parent.closeVisitModal();
+      }
+    }
     form.addEventListener('submit', function(e) {
       e.preventDefault();
       var data = new FormData(form);
@@ -31,14 +48,13 @@
       .then(function(r) { return r.json(); })
       .then(function(resp) {
         if (resp.success) {
-          if (window.parent && window.parent.closeVisitModal) {
-            window.parent.closeVisitModal();
-          }
+          closeModal();
         } else {
           alert(resp.message || 'An error occurred.');
         }
       });
     });
+    document.getElementById('cancel_visit').addEventListener('click', closeModal);
   })();
   </script>
 </body>
