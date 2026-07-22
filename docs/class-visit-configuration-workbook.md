@@ -256,6 +256,11 @@ Some programs pay a stipend or honorarium tied to completed visits. The module c
 - [ ] Yes — we will use the payment-processed flag to track payouts
 - [ ] Yes, but handled entirely outside this system — describe: ____________________________________
 
+**8.2** Turn on **Payment Tracking** for the module? When Yes, CE staff can mark submitted visit reports as paid from the CE Class Visits page. (Default: No.)
+
+- [ ] No — payment tracking stays off
+- [ ] Yes — enable payment tracking
+
 ---
 
 ## Section 9 — Reporting Needs

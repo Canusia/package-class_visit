@@ -59,6 +59,13 @@ class class_visit(forms.Form):
         label='Debug Email List',
     )
 
+    payment_tracking = forms.ChoiceField(
+        choices=YES_NO,
+        label='Payment Tracking',
+        help_text='When Yes, CE staff can mark submitted visit reports as paid.',
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
     # ---- Report field configuration ----
     report_fields_json = forms.CharField(
         required=False,
@@ -216,6 +223,7 @@ class class_visit(forms.Form):
         defaults = {
             'is_active': 'No',
             'debug_email_list': '',
+            'payment_tracking': 'No',
             'report_fields_json': '[]',
             'visit_types': 'Initial|Follow-up|Annual',
             'section_status_filter': 'active',
