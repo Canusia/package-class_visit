@@ -63,37 +63,6 @@ class class_visit(forms.Form):
         label='Debug Email List',
     )
 
-    payment_tracking = forms.ChoiceField(
-        choices=YES_NO,
-        label='Payment Tracking',
-        help_text='When Yes, CE staff can mark submitted visit reports as paid.',
-        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
-    )
-
-    # ---- Payment-paid visitor notification (only relevant when Payment Tracking = Yes) ----
-    notify_visitor_on_paid = forms.ChoiceField(
-        choices=YES_NO,
-        label='Notify Visitor When Payment Marked Paid',
-        help_text='When Yes, each visitor is emailed when their report is marked as paid.',
-        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
-    )
-
-    visitor_paid_subject = forms.CharField(
-        max_length=500,
-        required=False,
-        label='Visitor Paid Email Subject',
-    )
-
-    visitor_paid_message = forms.CharField(
-        required=False,
-        widget=forms.Textarea,
-        label='Visitor Paid Email Message',
-        help_text=(
-            'Shortcodes: {{visitor_first_name}}, {{visit_date}}, '
-            '{{class_sections}}, {{report_url}}'
-        ),
-    )
-
     # ---- Visit types ----
     visit_types = forms.CharField(
         max_length=500,
@@ -222,6 +191,38 @@ class class_visit(forms.Form):
         required=False,
         label='Send Visitor Reminder Every N Days',
         help_text='Number of days between visitor reminder emails. Default: 7.',
+    )
+
+    # ---- Payments (shown at the bottom of the settings form) ----
+    payment_tracking = forms.ChoiceField(
+        choices=YES_NO,
+        label='Payment Tracking',
+        help_text='When Yes, CE staff can mark submitted visit reports as paid.',
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    # Payment-paid visitor notification (only relevant when Payment Tracking = Yes).
+    notify_visitor_on_paid = forms.ChoiceField(
+        choices=YES_NO,
+        label='Notify Visitor When Payment Marked Paid',
+        help_text='When Yes, each visitor is emailed when their report is marked as paid.',
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    visitor_paid_subject = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Visitor Paid Email Subject',
+    )
+
+    visitor_paid_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea,
+        label='Visitor Paid Email Message',
+        help_text=(
+            'Shortcodes: {{visitor_first_name}}, {{visit_date}}, '
+            '{{class_sections}}, {{report_url}}'
+        ),
     )
 
     # ------------------------------------------------------------------
