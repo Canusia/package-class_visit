@@ -2,7 +2,28 @@
 import uuid
 from unittest.mock import patch, MagicMock, call
 from django.test import TestCase, RequestFactory
-from django.contrib.auth.models import AnonymousUser
+from django.contrib.auth import get_user_model
+from django.contrib.auth.models import AnonymousUser, Group
+from django.contrib.auth.signals import user_logged_in
+from django.urls import reverse
+
+User = get_user_model()
+
+
+def _sfx():
+    return uuid.uuid4().hex[:8]
+
+
+def _disconnect_login_signal():
+    """The django_login_history post_login receiver crashes on the test
+    client's missing REMOTE_ADDR. Disconnect for the duration of the test."""
+    receivers = list(user_logged_in.receivers)
+    user_logged_in.receivers = []
+    return receivers
+
+
+def _reconnect_login_signal(receivers):
+    user_logged_in.receivers = receivers
 
 
 class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
@@ -229,3 +250,53 @@ class BulkPdfActionTest(TestCase):
         self.assertIn(authorized_report, reports_passed)
         self.assertEqual(len(reports_passed), 1,
             'Only the report scoped to the faculty user\'s courses should be exported')
+
+
+class ManageVisitDatepickerTest(TestCase):
+    """The faculty manage_visit iframe loads bootstrap-datepicker and inits it
+    on the visit_date field (id_visit_date)."""
+
+    def setUp(self):
+        from cis.models.term import AcademicYear, Term
+        from cis.models.course import Cohort, Course, CourseAdministrator
+        from cis.models.section import ClassSection
+        from cis.models.teacher import Teacher
+
+        self._saved_login_receivers = _disconnect_login_signal()
+
+        self.faculty = User.objects.create_user(
+            username=f'fac_{_sfx()}', email=f'fac_{_sfx()}@x.com', password='x')
+        self.faculty.groups.add(Group.objects.get_or_create(name='faculty')[0])
+        self.client.force_login(self.faculty)
+
+        ay = AcademicYear.objects.create(name=f'AY-{_sfx()}')
+        term = Term.objects.create(academic_year=ay, code='FA', label=f'Fall-{_sfx()}')
+        cohort = Cohort.objects.create(name=f'Co-{_sfx()}', designator='CO')
+        course = Course.objects.create(catalog_number='101', title='A', cohort=cohort)
+        teacher = Teacher.objects.create(user=User.objects.create_user(
+            username=f't_{_sfx()}', email=f't_{_sfx()}@x.com', password='x'))
+        self.section = ClassSection.objects.create(
+            class_number='1001', term=term, course=course, teacher=teacher, status='A')
+
+        CourseAdministrator.objects.create(
+            user=self.faculty, course=course, role='Faculty', status='Active')
+
+        self.manage_visit_url = reverse(
+            'faculty_class_visit:manage_visit',
+            kwargs={'class_section_id': self.section.id},
+        )
+
+    def tearDown(self):
+        _reconnect_login_signal(self._saved_login_receivers)
+
+    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    def test_manage_visit_page_includes_datepicker_init(self, MockSettings):
+        MockSettings.from_db.return_value = {
+            'section_status_filter': 'active', 'visit_types': 'Observation'}
+        # GET the faculty manage_visit page for an anchor section (reuse the
+        # same URL + fixtures the other manage_visit view tests use).
+        resp = self.client.get(self.manage_visit_url)
+        self.assertEqual(resp.status_code, 200)
+        html = resp.content.decode()
+        self.assertIn('bootstrap-datepicker', html)          # asset loaded
+        self.assertIn("$('#id_visit_date').datepicker", html)  # init present

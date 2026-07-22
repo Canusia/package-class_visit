@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
   <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/css/bootstrap-datepicker.standalone.min.css" integrity="sha512-hUfBXTL9jLIWwdWjS8Ikr/lG7gnGdYddmW98jevEts6e3fHx4uebRBOafkIO/10SqJgxxCTBxUcVUGY8/hIM2g==" crossorigin="anonymous">
 </head>
 <body class="bg-white">
   <div class="card border-0">
@@ -56,6 +57,18 @@
     });
     document.getElementById('cancel_visit').addEventListener('click', closeModal);
   })();
+  </script>
+  <script src="https://code.jquery.com/jquery-3.5.1.min.js" integrity="sha512-bLT0Qm9VnAYZDflyKcBaQ2gg0hSYNQrJ8RilYldYQ1FxQYoCLtUjuuRuZo+fjqhx/qtq/1itJ0C2ejDxltZVFg==" crossorigin="anonymous"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/js/bootstrap-datepicker.min.js" integrity="sha512-cOGL6gI01KK2Bws211W8S3COhzrorBbzKvLPWYOVtSEYet3yG1fzJrimtwh8rUyvMy9qjgY2e7Rt6IwyaiX1Mg==" crossorigin="anonymous"></script>
+  <script>
+    jQuery(function ($) {
+      $('#id_visit_date').datepicker({
+        format: 'mm/dd/yyyy',
+        autoclose: true,
+        todayHighlight: true,
+        todayBtn: 'linked'
+      });
+    });
   </script>
 </body>
 </html>
