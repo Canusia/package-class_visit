@@ -109,6 +109,10 @@
                       <th data-data="createdon" data-name="createdon">Scheduled On</th>
                       <th data-data="class_sections" data-name="class_sections">Class Section(s)</th>
                       <th data-data="visitors" data-name="visitors">Visitor(s)</th>
+                      <th data-data="report_status" data-name="report_status">Report Status</th>
+                      {% if payment_tracking_enabled %}
+                      <th data-data="payment_status" data-name="payment_status">Payment Status</th>
+                      {% endif %}
                       <th data-data="id" data-name="id">Actions</th>
                     </tr>
                   </thead>
@@ -121,6 +125,7 @@
 
         <script>
         var tbl_visits, tbl_class_sections;
+        var CV_PAYMENT_TRACKING = {% if payment_tracking_enabled %}true{% else %}false{% endif %};
 
         $(document).ready(function () {
 
@@ -176,14 +181,7 @@
 
           /* ── Scheduled Visits DataTable ── */
           var visit_baseURL = '{{ api_url }}';
-          tbl_visits = $('#records_all').DataTable({
-            ajax: visit_baseURL,
-            serverSide: true,
-            processing: true,
-            order: [[1, 'desc']],
-            lengthMenu: [30, 50, 100],
-            language: { loadingRecords: '&nbsp;' },
-            columns: [
+          var visitColumns = [
               { orderable: false, render: function(d, t, row) {
                   return '<input type="checkbox" class="visit-select" value="' + row.id + '">';
               }},
@@ -203,27 +201,47 @@
                   });
                   return v;
               }},
-              { render: function(d, t, row) {
-                  var label = row.has_started_report === 'True'
-                    ? (row.has_submitted_report === 'True' ? 'Edit Report' : "Edit 'Draft' Report")
-                    : 'Add Report';
-
-                  var html = '<div class="btn-group btn-group-sm">';
-                  html += '<a href="#" class="btn btn-info ajax-open-modal" data-src="'
-                    + row.edit_report_url + '">' + label + '</a>';
-
-                  if (label === 'Add Report') {
-                    html += '<div class="btn-group" role="group">'
-                      + '<button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">Edit Visit</button>'
-                      + '<div class="dropdown-menu">'
-                      + '<a class="dropdown-item ajax-open-modal" href="#" data-src="' + row.manage_visit_url + '"><i class="fas fa-edit"></i>&nbsp;Edit</a>'
-                      + '<a class="dropdown-item ajax-delete-visit" href="#" data-delete-url="' + row.delete_url + '"><i class="fas fa-trash"></i>&nbsp;Delete</a>'
-                      + '</div></div>';
-                  }
-                  html += '</div>';
-                  return html;
+              { orderable: false, render: function(d, t, row) {
+                  var s = row.report_status;
+                  if (s === 'Submitted') return '<span class="badge badge-success">Submitted</span>';
+                  if (s === 'Draft') return '<span class="badge badge-warning">Draft</span>';
+                  return '<span class="badge badge-secondary">No Report</span>';
               }},
-            ]
+          ];
+          if (typeof CV_PAYMENT_TRACKING !== 'undefined' && CV_PAYMENT_TRACKING) {
+            visitColumns.push({ orderable: false, render: function(d, t, row) {
+                return row.payment_status || '';
+            }});
+          }
+          visitColumns.push({ render: function(d, t, row) {
+              var label = row.has_started_report === 'True'
+                ? (row.has_submitted_report === 'True' ? 'Edit Report' : "Edit 'Draft' Report")
+                : 'Add Report';
+
+              var html = '<div class="btn-group btn-group-sm">';
+              html += '<a href="#" class="btn btn-info ajax-open-modal" data-src="'
+                + row.edit_report_url + '">' + label + '</a>';
+
+              if (label === 'Add Report') {
+                html += '<div class="btn-group" role="group">'
+                  + '<button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">Edit Visit</button>'
+                  + '<div class="dropdown-menu">'
+                  + '<a class="dropdown-item ajax-open-modal" href="#" data-src="' + row.manage_visit_url + '"><i class="fas fa-edit"></i>&nbsp;Edit</a>'
+                  + '<a class="dropdown-item ajax-delete-visit" href="#" data-delete-url="' + row.delete_url + '"><i class="fas fa-trash"></i>&nbsp;Delete</a>'
+                  + '</div></div>';
+              }
+              html += '</div>';
+              return html;
+          }});
+
+          tbl_visits = $('#records_all').DataTable({
+            ajax: visit_baseURL,
+            serverSide: true,
+            processing: true,
+            order: [[1, 'desc']],
+            lengthMenu: [30, 50, 100],
+            language: { loadingRecords: '&nbsp;' },
+            columns: visitColumns
           });
 
           $(document).on('change', '#visit_filter :input', function() {

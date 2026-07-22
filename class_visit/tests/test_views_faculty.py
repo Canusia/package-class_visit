@@ -300,3 +300,47 @@ class ManageVisitDatepickerTest(TestCase):
         html = resp.content.decode()
         self.assertIn('bootstrap-datepicker', html)          # asset loaded
         self.assertIn("$('#id_visit_date').datepicker", html)  # init present
+
+
+class FacultyVisitsColumnsTest(TestCase):
+    """The Scheduled Observations (#all) table shows Report Status always, and
+    Payment Status only when the payment_tracking setting is 'Yes'."""
+
+    def setUp(self):
+        from django.contrib.auth.models import Group
+        self._receivers = _disconnect_login_signal()
+        ce = Group.objects.get_or_create(name='ce')[0]  # ce role passes the faculty guard
+        self.user = User.objects.create(
+            username=f'faccol_{_sfx()}@x.com', email=f'faccol_{_sfx()}@x.com', is_active=True)
+        self.user.set_password('pw')
+        self.user.save()
+        self.user.groups.add(ce)
+        self.client.force_login(self.user)
+
+    def tearDown(self):
+        _reconnect_login_signal(self._receivers)
+
+    def _set_payment_tracking(self, value):
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(
+            key='class_visit', defaults={'value': {'payment_tracking': value}})
+
+    def _html(self):
+        resp = self.client.get(reverse('faculty_class_visit:visits'))
+        self.assertEqual(resp.status_code, 200)
+        return resp.content.decode()
+
+    def test_report_status_column_always_present(self):
+        self.assertIn('Report Status', self._html())
+
+    def test_payment_status_shown_when_enabled(self):
+        self._set_payment_tracking('Yes')
+        html = self._html()
+        self.assertIn('Payment Status', html)
+        self.assertIn('var CV_PAYMENT_TRACKING = true', html)
+
+    def test_payment_status_hidden_when_disabled(self):
+        self._set_payment_tracking('No')
+        html = self._html()
+        self.assertNotIn('Payment Status', html)
+        self.assertIn('var CV_PAYMENT_TRACKING = false', html)

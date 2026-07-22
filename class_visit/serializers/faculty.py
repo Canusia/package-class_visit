@@ -104,6 +104,22 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
     def get_has_submitted_report(self, obj):
         return str(obj.has_submitted_report)
 
+    report_status = serializers.SerializerMethodField()
+
+    def get_report_status(self, obj):
+        try:
+            return obj.report.status
+        except Exception:
+            return 'No Report'
+
+    payment_status = serializers.SerializerMethodField()
+
+    def get_payment_status(self, obj):
+        try:
+            return obj.report.payment_status_sexy
+        except Exception:
+            return ''
+
     manage_visit_url = serializers.SerializerMethodField()
 
     def get_manage_visit_url(self, obj):
@@ -143,6 +159,8 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
             'visitors',
             'has_started_report',
             'has_submitted_report',
+            'report_status',
+            'payment_status',
             'manage_visit_url',
             'edit_report_url',
             'delete_url',

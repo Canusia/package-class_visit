@@ -318,4 +318,7 @@ def index(request):
         'page_title': 'Scheduled Observations',
         'api_url': '/faculty/class_visits/api/visit_schedule/?format=datatables',
         'class_sections_api_url': '/faculty/class_visits/api/class_sections/?format=datatables',
+        'payment_tracking_enabled': (
+            ClassVisitSettings.from_db().get('payment_tracking', 'No') == 'Yes'
+        ),
     })
