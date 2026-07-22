@@ -1,5 +1,7 @@
 # Class Visit Configuration Workbook
 
+*Last updated: 2026-07-22 · Reflects `package-class_visit` v0.0.9.*
+
 ## Canusia CEP Manager — Classroom Visits & Visit Reports
 
 **College / Institution:** ____________________________________

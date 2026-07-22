@@ -1,5 +1,7 @@
 # Canusia Class Visit Module Native Capabilities
 
+*Last updated: 2026-07-22 · Reflects `package-class_visit` v0.0.9.*
+
 This document outlines the native functionality supported by the Canusia Class Visit Module, as requested for review prior to providing institutional cost and time estimates. The features listed below are core to the platform and can be configured to meet institutional needs during implementation.
 
 # Scheduling & Visit Management
@@ -18,7 +20,7 @@ Each visit produces a structured report whose fields are fully defined by the in
 
 | Feature | Native Capability |
 | :-- | :-- |
-| **Custom Report Fields** | Institution-defined fields with configurable label, input type (short text, paragraph, dropdown, checkbox, date), required flag, and dropdown options. |
+| **Custom Report Fields** | Institution-defined fields with configurable label, input type (short text, paragraph, dropdown, checkbox, date), required flag, and dropdown options. Fields can be **targeted to specific visit types** (shown only for those types), and the configuration is **validated on save**. |
 | **Public vs. Internal Fields** | Each field can be marked public (shared with the instructor and included in their downloadable report) or internal (visible only to CE/faculty). |
 | **Draft & Submit Workflow** | Reports are saved as Draft while in progress and finalized as Submitted, with notifications firing only on submission. |
 | **File Attachments** | Supporting files (photos, signed forms, handouts) can be attached to a report. |
@@ -28,7 +30,7 @@ Each visit produces a structured report whose fields are fully defined by the in
 
 Professional, configurable email communication keeps instructors and administrators informed at each stage.
 
-- **Three Notification Points:** Configurable emails on (1) visit scheduled — to the instructor, (2) report submitted — to the instructor, and (3) report submitted — to your office.
+- **Notification Points:** Configurable emails on (1) visit scheduled — to the instructor, (2) report submitted — to the instructor, (3) report submitted — to your office, and (4) report marked paid — to the visitor (when payment tracking is on).
 - **Template Engine:** Each email has a configurable subject and message body utilizing shortcodes for dynamic data population (e.g., instructor name, visit date, visitors, class sections, type of visit, confirmation and report links).
 - **Routing Options:** The internal "report submitted" notification can route automatically to each course's administrator or to a single shared inbox.
 - **Automated Overdue Reminders:** Visitors with outstanding reports for past visits are reminded on a configurable repeating cadence (e.g., every 7 days) until the report is submitted.
@@ -36,8 +38,8 @@ Professional, configurable email communication keeps instructors and administrat
 
 # Tracking & Payments
 
-- **Visit Status Visibility:** Scheduled, pending, and completed visits are tracked per section and per instructor.
-- **Payment Tracking:** Submitted reports can be flagged as payment-processed, allowing programs that pay a stipend or honorarium per visit to track which visits have been paid out.
+- **Visit Status Visibility:** Scheduled, pending, and completed visits are tracked per section and per instructor. The CE and faculty visit tables show a **Report Status** column, and — when payment tracking is on — a **Payment Status** column.
+- **Payment Tracking:** Submitted reports can be marked **payment-processed** (individually or in bulk from the CE visits page), letting programs that pay a stipend or honorarium per visit track which visits have been paid out. When enabled, each **visitor can be automatically emailed when their report is marked paid** (configurable subject/message using the same shortcodes as the overdue-report reminder).
 
 # Reporting & Compliance
 
