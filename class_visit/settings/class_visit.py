@@ -45,6 +45,9 @@ class class_visit(forms.Form):
         ('No', 'No'),
     ]
 
+    # Field types supported by services.report_fields.build_report_form_fields.
+    REPORT_FIELD_TYPES = {'text', 'textarea', 'select', 'checkbox', 'date'}
+
     # ---- General ----
     is_active = forms.ChoiceField(
         choices=STATUS_OPTIONS,
@@ -210,6 +213,87 @@ class class_visit(forms.Form):
                 args=[request.GET.get('report_id')],
             )
             self.helper.add_input(Submit('submit', 'Save Setting'))
+
+    def clean_report_fields_json(self):
+        """Reject malformed / structurally-invalid Report Fields JSON at save time.
+
+        Without this, bad JSON is stored verbatim and silently parses to an empty
+        list at render time, so every report field disappears with no error.
+        """
+        raw = (self.cleaned_data.get('report_fields_json') or '').strip()
+        if not raw:
+            return '[]'
+
+        try:
+            defs = json.loads(raw)
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise forms.ValidationError(f'Invalid JSON: {exc}')
+
+        if not isinstance(defs, list):
+            raise forms.ValidationError(
+                'Report Fields must be a JSON array (list) of field objects.'
+            )
+
+        # Configured Visit Types to validate each field's "visit_types" against.
+        configured_types = {
+            v.strip()
+            for v in (self.cleaned_data.get('visit_types') or '').split('|')
+            if v.strip()
+        }
+
+        seen_names = set()
+        for i, defn in enumerate(defs, start=1):
+            if not isinstance(defn, dict):
+                raise forms.ValidationError(f'Field #{i}: each field must be a JSON object.')
+
+            name = defn.get('name')
+            if not name or not isinstance(name, str):
+                raise forms.ValidationError(
+                    f'Field #{i}: "name" is required and must be a non-empty string.'
+                )
+            if name in seen_names:
+                raise forms.ValidationError(
+                    f'Duplicate field name "{name}". Each field needs a unique "name".'
+                )
+            seen_names.add(name)
+
+            if not defn.get('label') or not isinstance(defn.get('label'), str):
+                raise forms.ValidationError(
+                    f'Field "{name}": "label" is required and must be a string.'
+                )
+
+            field_type = defn.get('type')
+            if field_type not in self.REPORT_FIELD_TYPES:
+                raise forms.ValidationError(
+                    f'Field "{name}": "type" must be one of '
+                    f'{", ".join(sorted(self.REPORT_FIELD_TYPES))} (got {field_type!r}).'
+                )
+
+            if field_type == 'select':
+                options = defn.get('options')
+                if not isinstance(options, list) or not options:
+                    raise forms.ValidationError(
+                        f'Field "{name}": type "select" requires a non-empty "options" list.'
+                    )
+
+            visit_types = defn.get('visit_types')
+            if visit_types is not None:
+                if not isinstance(visit_types, list) or not all(
+                    isinstance(v, str) for v in visit_types
+                ):
+                    raise forms.ValidationError(
+                        f'Field "{name}": "visit_types" must be a list of strings.'
+                    )
+                if configured_types:
+                    unknown = [v for v in visit_types if v not in configured_types]
+                    if unknown:
+                        raise forms.ValidationError(
+                            f'Field "{name}": visit type(s) {", ".join(unknown)} '
+                            f'are not in the configured Visit Types '
+                            f'({", ".join(sorted(configured_types))}).'
+                        )
+
+        return raw
 
     @classmethod
     def from_db(cls):
