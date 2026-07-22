@@ -230,6 +230,31 @@ class VisitScheduleFormValidationTest(TestCase):
             "\n".join(form.errors["class_sections"]),
         )
 
+    def test_visitors_choices_are_deduped_by_user(self):
+        """A faculty user who administers TWO courses must appear once in visitors."""
+        graph_a = _make_graph("dd1")
+        graph_b = _make_graph("dd2")
+
+        faculty_user = graph_a["faculty_user"]
+        # Same faculty_user is also an active CourseAdministrator on graph_b's course.
+        CourseAdministrator.objects.create(
+            user=faculty_user,
+            course=graph_b["course"],
+            status="Active",
+        )
+
+        with patch(
+            "class_visit.class_visit.forms.faculty.ClassVisitSettings"
+        ) as mock_settings:
+            mock_settings.from_db.return_value = _SETTINGS
+            form = VisitScheduleForm(faculty_user=faculty_user)
+
+        visitor_ids = [choice[0] for choice in form.fields["visitors"].choices]
+        self.assertEqual(
+            len(visitor_ids), len(set(visitor_ids)),
+            "visitors choices must not contain duplicate users",
+        )
+
     def test_wrong_status_section_rejected(self):
         """A Cancelled section (status='C') must fail when filter=active."""
         graph = _make_graph("ws1")

@@ -132,17 +132,23 @@ class VisitScheduleForm(forms.Form):
                 ))
         self.fields['class_sections'].choices = section_choices
 
-        # Populate visitors: all active CourseAdministrators for those courses.
+        # Populate visitors: active CourseAdministrators for those courses,
+        # deduped by user (a user may administer multiple of these courses).
         visitors_qs = CourseAdministrator.objects.filter(
             course__id__in=course_ids,
             status__iexact='active',
-        ).select_related('user').order_by('user__last_name')
-        visitors = list(visitors_qs)
+        ).select_related('user').order_by('user__last_name', 'user__first_name')
 
-        self.fields['visitors'].choices = [
-            (str(v.user.id), f'{v.user.last_name}, {v.user.first_name}')
-            for v in visitors
-        ]
+        seen_user_ids = set()
+        visitor_choices = []
+        for ca in visitors_qs:
+            if ca.user_id in seen_user_ids:
+                continue
+            seen_user_ids.add(ca.user_id)
+            visitor_choices.append(
+                (str(ca.user.id), f'{ca.user.last_name}, {ca.user.first_name}')
+            )
+        self.fields['visitors'].choices = visitor_choices
 
         # Pre-populate for edit
         if visit_schedule:
