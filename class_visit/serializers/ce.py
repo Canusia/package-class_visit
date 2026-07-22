@@ -23,6 +23,13 @@ class CEVisitScheduleSerializer(serializers.ModelSerializer):
     ce_edit_url = serializers.SerializerMethodField()
     ce_delete_url = serializers.SerializerMethodField()
     ce_report_url = serializers.SerializerMethodField()
+    payment_status = serializers.SerializerMethodField()
+
+    def get_payment_status(self, obj):
+        try:
+            return obj.report.payment_status_sexy
+        except Exception:
+            return ''
 
     def get_teacher_display(self, obj):
         teacher = obj.teacher
@@ -80,6 +87,7 @@ class CEVisitScheduleSerializer(serializers.ModelSerializer):
             'ce_edit_url',
             'ce_delete_url',
             'ce_report_url',
+            'payment_status',
             'meta',
         ]
         datatables_always_serialize = [
@@ -93,6 +101,7 @@ class CEVisitScheduleSerializer(serializers.ModelSerializer):
             'ce_edit_url',
             'ce_delete_url',
             'ce_report_url',
+            'payment_status',
         ]
 
 

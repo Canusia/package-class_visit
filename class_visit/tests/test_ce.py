@@ -139,6 +139,7 @@ class CEUrlsTest(TestCase):
 # ---------------------------------------------------------------------------
 
 from django.test import Client
+from django.urls import reverse
 from django.contrib.auth import get_user_model
 from django.contrib.auth.signals import user_logged_in
 from unittest.mock import patch, MagicMock
@@ -390,6 +391,76 @@ class CEBulkPDFTest(TestCase):
         if resp.status_code == 200:
             self.assertEqual(resp['Content-Type'], 'application/pdf')
             mock_pdf.visit_letters_pdf.assert_called_once()
+
+
+class CEMarkAsPaidTest(TestCase):
+    """Bulk 'mark_as_paid' action, gated on the payment_tracking setting."""
+
+    @classmethod
+    def setUpClass(cls):
+        if _login_history_post_login is not None:
+            user_logged_in.disconnect(_login_history_post_login)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        if _login_history_post_login is not None:
+            user_logged_in.connect(_login_history_post_login)
+
+    def setUp(self):
+        from class_visit.class_visit.models import VisitSchedule, VisitReport
+
+        self.client = Client()
+        self.user = make_ce_user('_paid')
+        self.client.force_login(self.user)
+
+        self.visit = VisitSchedule.objects.create()
+        self.report = VisitReport.objects.create(
+            visit_schedule=self.visit,
+            teacher_discussion='',
+            student_discussion='',
+            visit_letter='',
+            status='Submitted',
+            payment_processed='0',
+        )
+
+        self.draft_visit = VisitSchedule.objects.create()
+        self.draft_report = VisitReport.objects.create(
+            visit_schedule=self.draft_visit,
+            teacher_discussion='',
+            student_discussion='',
+            visit_letter='',
+            status='Draft',
+            payment_processed='0',
+        )
+
+    def test_mark_as_paid_requires_setting_enabled(self):
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'No'}})
+        resp = self.client.post(reverse('class_visit:ce_bulk_action'),
+                                {'action': 'mark_as_paid', 'ids[]': [str(self.visit.id)]})
+        self.assertEqual(resp.status_code, 403)
+
+    def test_mark_as_paid_marks_submitted_reports(self):
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'Yes'}})
+        # self.report is Submitted (eligible). self.visit is its schedule.
+        resp = self.client.post(reverse('class_visit:ce_bulk_action'),
+                                {'action': 'mark_as_paid', 'ids[]': [str(self.visit.id)]})
+        self.assertEqual(resp.status_code, 200)
+        self.assertTrue(resp.json()['success'])
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.payment_processed, '1')
+
+    def test_mark_as_paid_skips_ineligible(self):
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'Yes'}})
+        # self.draft_visit has a Draft report (not eligible).
+        resp = self.client.post(reverse('class_visit:ce_bulk_action'),
+                                {'action': 'mark_as_paid', 'ids[]': [str(self.draft_visit.id)]})
+        self.assertEqual(resp.status_code, 200)
+        self.assertIn('Marked 0 of 1', resp.json()['message'])
 
 
 # ---------------------------------------------------------------------------
