@@ -493,3 +493,54 @@ class CEIntegrationWiringTest(TestCase):
         from class_visit.class_visit.settings.class_visit import class_visit as class_visit_settings
         cfg = class_visit_settings.from_db()
         self.assertIsInstance(cfg, dict)
+
+
+# ---------------------------------------------------------------------------
+# Task 5 — CE UI payment column + mark-as-paid button (gated)
+# ---------------------------------------------------------------------------
+
+class CEIndexPaymentUiTest(TestCase):
+    """CE index page shows/hides the payment column + button per the payment_tracking setting."""
+
+    @classmethod
+    def setUpClass(cls):
+        if _login_history_post_login is not None:
+            user_logged_in.disconnect(_login_history_post_login)
+        super().setUpClass()
+
+    @classmethod
+    def tearDownClass(cls):
+        super().tearDownClass()
+        if _login_history_post_login is not None:
+            user_logged_in.connect(_login_history_post_login)
+
+    def setUp(self):
+        self.client = Client()
+        self.user = make_ce_user('_pay_ui')
+        self.client.force_login(self.user)
+
+    @patch('class_visit.class_visit.views.ce.Term')
+    @patch('class_visit.class_visit.views.ce.Course')
+    @patch('class_visit.class_visit.views.ce.active_term')
+    def test_index_shows_paid_button_when_enabled(self, mock_at, mock_course, mock_term):
+        from cis.models.settings import Setting
+        mock_term.objects.all.return_value.order_by.return_value = []
+        mock_course.objects.filter.return_value.order_by.return_value = []
+        mock_at.return_value = None
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'Yes'}})
+        html = self.client.get(reverse('class_visit:ce_index')).content.decode()
+        self.assertIn('Mark Selected as Paid', html)
+        self.assertIn('var CV_PAYMENT_TRACKING = true', html)
+
+    @patch('class_visit.class_visit.views.ce.Term')
+    @patch('class_visit.class_visit.views.ce.Course')
+    @patch('class_visit.class_visit.views.ce.active_term')
+    def test_index_hides_paid_button_when_disabled(self, mock_at, mock_course, mock_term):
+        from cis.models.settings import Setting
+        mock_term.objects.all.return_value.order_by.return_value = []
+        mock_course.objects.filter.return_value.order_by.return_value = []
+        mock_at.return_value = None
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'No'}})
+        html = self.client.get(reverse('class_visit:ce_index')).content.decode()
+        self.assertNotIn('Mark Selected as Paid', html)
+        self.assertIn('var CV_PAYMENT_TRACKING = false', html)

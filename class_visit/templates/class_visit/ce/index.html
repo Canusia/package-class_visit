@@ -68,6 +68,11 @@
               <i class="fas fa-file-pdf"></i>&nbsp;Export Selected Letters (PDF)
             </button>
           </form>
+          {% if payment_tracking_enabled %}
+          <button type="button" id="btn_mark_paid" class="btn btn-sm btn-success ml-2">
+            <i class="fas fa-dollar-sign"></i>&nbsp;Mark Selected as Paid
+          </button>
+          {% endif %}
         </div>
 
         <table id="tbl_visits" class="table table-striped" style="width:100%">
@@ -80,6 +85,9 @@
               <th data-data="teacher_display" data-name="teacher_display">Instructor</th>
               <th data-data="visitors" data-name="visitors">Visitor(s)</th>
               <th data-data="report_status" data-name="report_status">Report Status</th>
+              {% if payment_tracking_enabled %}
+              <th data-data="payment_status" data-name="payment_status">Payment Status</th>
+              {% endif %}
               <th data-data="id" data-name="id"><span class="sr-only">Actions</span></th>
             </tr>
           </thead>
@@ -178,5 +186,6 @@ var CV_NN_API_URL = "{{ not_needed_api_url }}";
 var CV_NN_ADD_URL = "{% url 'class_visit:ce_not_needed_add' %}";
 var CV_BULK_ACTION_URL = "{% url 'class_visit:ce_bulk_action' %}";
 var CV_CSRFTOKEN = "{{ csrf_token }}";
+var CV_PAYMENT_TRACKING = {% if payment_tracking_enabled %}true{% else %}false{% endif %};
 </script>
 {% endblock %}

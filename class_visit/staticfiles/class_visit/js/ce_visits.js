@@ -17,6 +17,87 @@ window.closeNNModal = function () {
 
 $(document).ready(function () {
 
+    /* ===== All Visits columns (built before init so the payment column can be
+       conditionally inserted to stay in sync with the <thead>) ===== */
+    var visitColumns = [
+        /* Checkbox column */
+        {
+            orderable: false,
+            searchable: false,
+            render: function (data, type, row) {
+                return '<input type="checkbox" class="chk-visit" value="' + row.id + '">';
+            },
+        },
+        /* visit_date */
+        { data: 'visit_date', name: 'visit_date' },
+        /* type_of_visit */
+        { data: 'type_of_visit', name: 'type_of_visit' },
+        /* class_sections */
+        {
+            data: 'class_sections',
+            name: 'class_sections',
+            orderable: false,
+            render: function (data) {
+                if (!data || !data.length) return '—';
+                return data.map(function (s) {
+                    return s.course.name + ' @ ' + (s.highschool ? s.highschool.name : '') +
+                        '<br><span class="text-muted">(' + s.class_number + '-' + s.section_number + ')</span>';
+                }).join('<br>');
+            },
+        },
+        /* teacher_display */
+        { data: 'teacher_display', name: 'teacher_display' },
+        /* visitors */
+        {
+            data: 'visitors',
+            name: 'visitors',
+            orderable: false,
+            render: function (data) {
+                if (!data || !data.length) return '—';
+                return data.map(function (v) {
+                    return v.first_name + ' ' + v.last_name;
+                }).join('<br>');
+            },
+        },
+        /* report_status */
+        {
+            data: 'report_status',
+            name: 'report_status',
+            render: function (data) {
+                if (data === 'Submitted') {
+                    return '<span class="badge badge-success">Submitted</span>';
+                } else if (data === 'Draft') {
+                    return '<span class="badge badge-warning">Draft</span>';
+                }
+                return '<span class="badge badge-secondary">No Report</span>';
+            },
+        },
+    ];
+    if (typeof CV_PAYMENT_TRACKING !== 'undefined' && CV_PAYMENT_TRACKING) {
+        visitColumns.push({ data: 'payment_status', name: 'payment_status', orderable: false });
+    }
+    visitColumns.push({
+        /* Actions */
+        data: 'id',
+        name: 'id',
+        orderable: false,
+        searchable: false,
+        render: function (data, type, row) {
+            var btns = '<div class="btn-group btn-group-sm">';
+
+            if (row.ce_report_url) {
+                btns += '<a href="' + row.ce_report_url + '" class="btn btn-info">View Report</a>';
+            }
+
+            btns += '<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Actions</button>';
+            btns += '<div class="dropdown-menu">';
+            btns += '<a class="dropdown-item ajax-open-visit" href="#" data-src="' + row.ce_edit_url + '">Edit Visit</a>';
+            btns += '<a class="dropdown-item ajax-delete-visit" href="#" data-id="' + row.id + '" data-url="' + row.ce_delete_url + '">Delete Visit</a>';
+            btns += '</div></div>';
+            return btns;
+        },
+    });
+
     /* ===== All Visits DataTable ===== */
     tbl_visits = $('#tbl_visits').DataTable({
         dom: 'B<"float-left mt-3 mb-3"l><"float-right mt-3"f><"row clear">rt<"row"<"col-6"i><"col-6 float-right"p>>',
@@ -47,81 +128,7 @@ $(document).ready(function () {
                 d.report_status = $('#frm_visits_filter select[name=report_status]').val();
             },
         },
-        columns: [
-            /* Checkbox column */
-            {
-                orderable: false,
-                searchable: false,
-                render: function (data, type, row) {
-                    return '<input type="checkbox" class="chk-visit" value="' + row.id + '">';
-                },
-            },
-            /* visit_date */
-            { data: 'visit_date', name: 'visit_date' },
-            /* type_of_visit */
-            { data: 'type_of_visit', name: 'type_of_visit' },
-            /* class_sections */
-            {
-                data: 'class_sections',
-                name: 'class_sections',
-                orderable: false,
-                render: function (data) {
-                    if (!data || !data.length) return '—';
-                    return data.map(function (s) {
-                        return s.course.name + ' @ ' + (s.highschool ? s.highschool.name : '') +
-                            '<br><span class="text-muted">(' + s.class_number + '-' + s.section_number + ')</span>';
-                    }).join('<br>');
-                },
-            },
-            /* teacher_display */
-            { data: 'teacher_display', name: 'teacher_display' },
-            /* visitors */
-            {
-                data: 'visitors',
-                name: 'visitors',
-                orderable: false,
-                render: function (data) {
-                    if (!data || !data.length) return '—';
-                    return data.map(function (v) {
-                        return v.first_name + ' ' + v.last_name;
-                    }).join('<br>');
-                },
-            },
-            /* report_status */
-            {
-                data: 'report_status',
-                name: 'report_status',
-                render: function (data) {
-                    if (data === 'Submitted') {
-                        return '<span class="badge badge-success">Submitted</span>';
-                    } else if (data === 'Draft') {
-                        return '<span class="badge badge-warning">Draft</span>';
-                    }
-                    return '<span class="badge badge-secondary">No Report</span>';
-                },
-            },
-            /* Actions */
-            {
-                data: 'id',
-                name: 'id',
-                orderable: false,
-                searchable: false,
-                render: function (data, type, row) {
-                    var btns = '<div class="btn-group btn-group-sm">';
-
-                    if (row.ce_report_url) {
-                        btns += '<a href="' + row.ce_report_url + '" class="btn btn-info">View Report</a>';
-                    }
-
-                    btns += '<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Actions</button>';
-                    btns += '<div class="dropdown-menu">';
-                    btns += '<a class="dropdown-item ajax-open-visit" href="#" data-src="' + row.ce_edit_url + '">Edit Visit</a>';
-                    btns += '<a class="dropdown-item ajax-delete-visit" href="#" data-id="' + row.id + '" data-url="' + row.ce_delete_url + '">Delete Visit</a>';
-                    btns += '</div></div>';
-                    return btns;
-                },
-            },
-        ],
+        columns: visitColumns,
         language: { loadingRecords: '&nbsp;' },
     });
 
@@ -219,6 +226,34 @@ $(document).ready(function () {
                 } catch (ex) {}
                 swal('Error', msg, 'error');
             },
+        });
+    });
+
+    /* ===== Mark selected as paid ===== */
+    $(document).on('click', '#btn_mark_paid', function () {
+        var selected = [];
+        $('.chk-visit:checked').each(function () { selected.push($(this).val()); });
+        if (!selected.length) { swal('', 'Select at least one visit.', 'warning'); return; }
+        if (!confirm('Mark the selected submitted report(s) as paid?')) return;
+        var data = { action: 'mark_as_paid', csrfmiddlewaretoken: CV_CSRFTOKEN };
+        $.blockUI();
+        $.ajax({
+            type: 'POST', url: CV_BULK_ACTION_URL,
+            data: $.param(data) + '&' + selected.map(function (id) {
+                return 'ids[]=' + encodeURIComponent(id);
+            }).join('&'),
+            success: function (resp) {
+                $.unblockUI();
+                swal('', (resp && resp.message) || 'Done', 'success').then(function () {
+                    tbl_visits.ajax.reload(null, false);
+                });
+            },
+            error: function (xhr) {
+                $.unblockUI();
+                var msg = 'Could not mark as paid.';
+                try { msg = JSON.parse(xhr.responseText).message || msg; } catch (e) {}
+                swal('Error', msg, 'error');
+            }
         });
     });
 
