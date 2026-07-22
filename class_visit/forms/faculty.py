@@ -104,12 +104,13 @@ class VisitScheduleForm(forms.Form):
         ).select_related('teacher__user', 'course', 'term', 'highschool')
 
         # Anchor: limit choices to the same course taught by the same instructor
-        # as the section the visit is being managed from (a visit's sections must
-        # share one instructor).
+        # at the same high school as the section the visit is being managed from
+        # (a visit's sections must share one instructor and one high school).
         if anchor_section is not None:
             sections_qs = sections_qs.filter(
                 course_id=anchor_section.course_id,
                 teacher_id=anchor_section.teacher_id,
+                highschool_id=anchor_section.highschool_id,
             )
 
         sections = list(sections_qs)

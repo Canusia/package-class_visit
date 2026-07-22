@@ -180,6 +180,37 @@ class VisitScheduleFormValidationTest(TestCase):
         )
         self.assertTrue(form.is_valid(), form.errors)
 
+    def test_anchor_limits_choices_to_same_highschool(self):
+        """When anchored to a section, choices are limited to the same course +
+        teacher + high school; a same-course/same-teacher section at a DIFFERENT
+        high school must not appear."""
+        graph = _make_graph("hs1")
+        anchor = graph["section"]
+        # Same course + same teacher, but a DIFFERENT high school.
+        other_hs, _ = HighSchool.objects.get_or_create(
+            name="CVF Other HS hs1", defaults={"code": "CVFOHS1"},
+        )
+        other_section = ClassSection.objects.create(
+            class_number="CVF-hs1-002",
+            section_number="1",
+            term=graph["term"],
+            course=graph["course"],
+            highschool=other_hs,
+            teacher=graph["teacher"],
+            status="A",
+        )
+        with patch(
+            "class_visit.class_visit.forms.faculty.ClassVisitSettings"
+        ) as mock_settings:
+            mock_settings.from_db.return_value = _SETTINGS
+            form = VisitScheduleForm(
+                faculty_user=graph["faculty_user"],
+                anchor_section=anchor,
+            )
+        choice_ids = [c[0] for c in form.fields["class_sections"].choices]
+        self.assertIn(str(anchor.id), choice_ids)
+        self.assertNotIn(str(other_section.id), choice_ids)
+
     def test_mismatched_teachers_rejected(self):
         """Sections from different teachers must fail clean_class_sections."""
         graph_a = _make_graph("mm1")
