@@ -24,7 +24,8 @@ class class_visit(forms.Form):
             "type": "text|textarea|select|checkbox|date",
             "public": true,
             "required": false,
-            "options": ["Opt A", "Opt B"]   // for select type only
+            "options": ["Opt A", "Opt B"],  // for select type only
+            "visit_types": ["Initial"]     // omit/empty = applies to all visit types
           },
           ...
         ]
@@ -66,6 +67,14 @@ class class_visit(forms.Form):
         widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
     )
 
+    # ---- Visit types ----
+    visit_types = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Visit Types',
+        help_text='Pipe-delimited list of visit types. E.g. Initial|Follow-up|Annual',
+    )
+
     # ---- Report field configuration ----
     report_fields_json = forms.CharField(
         required=False,
@@ -74,17 +83,10 @@ class class_visit(forms.Form):
         help_text=(
             'JSON array of field definitions. Each object: '
             '{"name":"field_name","label":"Label","type":"text|textarea|select|checkbox|date",'
-            '"public":true,"required":false,"options":["A","B"]}. '
-            '"options" is only used when type=select.'
+            '"public":true,"required":false,"options":["A","B"],"visit_types":["Initial"]}. '
+            '"options" is only used when type=select. "visit_types" limits the field to those '
+            'Visit Types (omit or leave empty to show for all types).'
         ),
-    )
-
-    # ---- Visit types ----
-    visit_types = forms.CharField(
-        max_length=500,
-        required=False,
-        label='Visit Types',
-        help_text='Pipe-delimited list of visit types. E.g. Initial|Follow-up|Annual',
     )
 
     # ---- Section status filter ----

@@ -22,10 +22,23 @@ def _get_settings() -> dict:
     return CVSettings.from_db()
 
 
-def get_report_field_defs() -> list:
+def _applies_to_type(defn: dict, type_of_visit) -> bool:
+    """A field with no/empty 'visit_types' applies to all; otherwise only to listed types."""
+    types = defn.get('visit_types') or []
+    if not types:
+        return True
+    return type_of_visit in types
+
+
+def get_report_field_defs(type_of_visit=None) -> list:
     """
     Return the list of report field definition dicts from settings.
     Returns [] on missing or invalid JSON.
+
+    Args:
+        type_of_visit: when given, only defs that apply to this visit type
+            (per each def's optional 'visit_types' list) are returned. When
+            None (default), all defs are returned unfiltered.
     """
     cfg = _get_settings()
     raw = cfg.get('report_fields_json', '[]')
@@ -33,9 +46,11 @@ def get_report_field_defs() -> list:
         defs = json.loads(raw)
         if not isinstance(defs, list):
             return []
-        return defs
     except (json.JSONDecodeError, TypeError, ValueError):
         return []
+    if type_of_visit is not None:
+        defs = [d for d in defs if _applies_to_type(d, type_of_visit)]
+    return defs
 
 
 def public_field_names() -> set:
@@ -43,12 +58,13 @@ def public_field_names() -> set:
     return {d['name'] for d in get_report_field_defs() if d.get('public')}
 
 
-def build_report_form_fields(initial: dict = None) -> dict:
+def build_report_form_fields(initial: dict = None, type_of_visit=None) -> dict:
     """
     Build a dict of Django form field instances from the stored field definitions.
 
     Args:
         initial: optional dict of initial values keyed by field name.
+        type_of_visit: optional visit type used to filter which field defs apply.
 
     Returns:
         dict mapping field_name -> Django form field instance.
@@ -56,7 +72,7 @@ def build_report_form_fields(initial: dict = None) -> dict:
     initial = initial or {}
     field_map = {}
 
-    for defn in get_report_field_defs():
+    for defn in get_report_field_defs(type_of_visit):
         name = defn.get('name', '')
         label = defn.get('label', name)
         required = bool(defn.get('required', False))
@@ -123,7 +139,8 @@ def report_values_for_display(visit_report, public_only: bool = False) -> list:
     Returns:
         list of dicts in definition order.
     """
-    defs = get_report_field_defs()
+    type_of_visit = getattr(getattr(visit_report, 'visit_schedule', None), 'type_of_visit', None)
+    defs = get_report_field_defs(type_of_visit)
     result = []
     for defn in defs:
         if public_only and not defn.get('public'):

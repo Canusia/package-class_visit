@@ -278,7 +278,10 @@ class VisitReportDynamicForm(forms.Form):
         self._visit = visit
 
         # Inject dynamic fields from the report_fields service
-        dynamic_fields = report_fields.build_report_form_fields(initial=initial_meta)
+        dynamic_fields = report_fields.build_report_form_fields(
+            initial=initial_meta,
+            type_of_visit=getattr(visit, 'type_of_visit', None),
+        )
         for field_name, field_obj in dynamic_fields.items():
             self.fields[field_name] = field_obj
 

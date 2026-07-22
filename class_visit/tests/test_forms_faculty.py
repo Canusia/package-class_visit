@@ -289,7 +289,9 @@ class VisitReportDynamicFormTest(TestCase):
         mock_rf.build_report_form_fields.return_value = {}
         visit = MagicMock()
         form = VisitReportDynamicForm(visit=visit, initial_meta=None)
-        mock_rf.build_report_form_fields.assert_called_once_with(initial=None)
+        mock_rf.build_report_form_fields.assert_called_once_with(
+            initial=None, type_of_visit=visit.type_of_visit
+        )
 
     @patch("class_visit.class_visit.forms.faculty.report_fields")
     def test_form_builds_fields_with_existing_meta(self, mock_rf):
@@ -297,4 +299,6 @@ class VisitReportDynamicFormTest(TestCase):
         mock_rf.build_report_form_fields.return_value = {}
         visit = MagicMock()
         form = VisitReportDynamicForm(visit=visit, initial_meta=existing_meta)
-        mock_rf.build_report_form_fields.assert_called_once_with(initial=existing_meta)
+        mock_rf.build_report_form_fields.assert_called_once_with(
+            initial=existing_meta, type_of_visit=visit.type_of_visit
+        )

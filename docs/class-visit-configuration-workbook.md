@@ -128,6 +128,13 @@ A report is saved as a **Draft** while in progress and becomes **Submitted** whe
 | | | | | |
 | | | | | |
 
+**4.1a** Do any fields only apply to certain visit types (Section 2)? Each field can optionally be limited to one or more visit types (e.g. an "Improvement plan" field that only shows on a *Follow-up* visit); fields left unrestricted show on every visit report regardless of type.
+
+| Field Label | Applies to which Visit Type(s)? (blank = all) |
+| :-- | :-- |
+| | |
+| | |
+
 **4.2** Should the visitor record who they spoke with during the visit (instructor, school administrators)? If so, what should be captured?
 
 ____________________________________
