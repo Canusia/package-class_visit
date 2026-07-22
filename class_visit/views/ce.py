@@ -23,6 +23,7 @@ from ..serializers.ce import (
 )
 from ..services import pdf as pdf_service
 from ..services import report_fields
+from ..services import emails as email_service
 from ..settings.class_visit import class_visit as ClassVisitSettings
 
 logger = logging.getLogger(__name__)
@@ -364,6 +365,7 @@ def do_bulk_action(request):
                 continue
             if report.can_payment_be_processed and report.payment_processed != '1':
                 report.mark_as_payment_processed()
+                email_service.notify_visitor_payment_processed(report)
                 marked += 1
         return JsonResponse(
             {'success': True, 'message': f'Marked {marked} of {total} report(s) as paid.'}

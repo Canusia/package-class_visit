@@ -495,6 +495,16 @@ class CEMarkAsPaidTest(TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertIn('Marked 0 of 1', resp.json()['message'])
 
+    @patch('class_visit.class_visit.views.ce.email_service')
+    def test_mark_as_paid_notifies_visitor_for_eligible_only(self, mock_emails):
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(key='class_visit', defaults={'value': {'payment_tracking': 'Yes'}})
+        self.client.post(reverse('class_visit:ce_bulk_action'),
+                         {'action': 'mark_as_paid',
+                          'ids[]': [str(self.visit.id), str(self.draft_visit.id)]})
+        # Notified once — only the eligible (Submitted) report.
+        mock_emails.notify_visitor_payment_processed.assert_called_once_with(self.report)
+
 
 # ---------------------------------------------------------------------------
 # Task 8 — Integration Wiring Check

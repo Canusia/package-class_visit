@@ -268,6 +268,12 @@ Some programs pay a stipend or honorarium tied to completed visits. The module c
 - [ ] No — payment tracking stays off
 - [ ] Yes — enable payment tracking
 
+**8.3** *(only if 8.2 = Yes)* Notify the **visitor(s) by email when their report is marked as paid**? When Yes, provide the email subject and message. The message supports the same shortcodes as the visitor reminder email: `{{visitor_first_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{report_url}}`. (Default: No.)
+
+- [ ] No — no payment-paid notification
+- [ ] Yes — email subject: ________________________
+      email message: ________________________________________
+
 ---
 
 ## Section 9 — Reporting Needs

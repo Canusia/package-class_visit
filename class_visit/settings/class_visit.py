@@ -5,7 +5,7 @@ from django.http import JsonResponse
 from django.urls import reverse_lazy
 
 from crispy_forms.helper import FormHelper
-from crispy_forms.layout import Submit
+from crispy_forms.layout import Submit, Layout, HTML
 
 from cis.models.settings import Setting
 
@@ -68,6 +68,30 @@ class class_visit(forms.Form):
         label='Payment Tracking',
         help_text='When Yes, CE staff can mark submitted visit reports as paid.',
         widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    # ---- Payment-paid visitor notification (only relevant when Payment Tracking = Yes) ----
+    notify_visitor_on_paid = forms.ChoiceField(
+        choices=YES_NO,
+        label='Notify Visitor When Payment Marked Paid',
+        help_text='When Yes, each visitor is emailed when their report is marked as paid.',
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    visitor_paid_subject = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Visitor Paid Email Subject',
+    )
+
+    visitor_paid_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea,
+        label='Visitor Paid Email Message',
+        help_text=(
+            'Shortcodes: {{visitor_first_name}}, {{visit_date}}, '
+            '{{class_sections}}, {{report_url}}'
+        ),
     )
 
     # ---- Visit types ----
@@ -213,6 +237,43 @@ class class_visit(forms.Form):
                 args=[request.GET.get('report_id')],
             )
             self.helper.add_input(Submit('submit', 'Save Setting'))
+            # Render all fields in declaration order, then a small script that
+            # shows the payment-notification questions only when Payment
+            # Tracking = Yes (and the subject/message only when notifying).
+            self.helper.layout = Layout(
+                *list(self.fields.keys()),
+                HTML(self._PAYMENT_NOTIFY_TOGGLE_JS),
+            )
+
+    # Injected into the settings form; toggles visibility of the payment-paid
+    # notification fields based on the payment_tracking / notify selections.
+    _PAYMENT_NOTIFY_TOGGLE_JS = """
+<script>
+(function () {
+  function box(name) { return document.getElementById('div_id_' + name); }
+  function set(name, show) { var b = box(name); if (b) { b.style.display = show ? '' : 'none'; } }
+  window.cvSyncPaymentNotify = function () {
+    var pay = document.getElementById('id_payment_tracking');
+    var notify = document.getElementById('id_notify_visitor_on_paid');
+    var payOn = pay && pay.value === 'Yes';
+    var notifyOn = notify && notify.value === 'Yes';
+    set('notify_visitor_on_paid', payOn);
+    set('visitor_paid_subject', payOn && notifyOn);
+    set('visitor_paid_message', payOn && notifyOn);
+  };
+  if (!window.cvPaymentNotifyBound) {
+    window.cvPaymentNotifyBound = true;
+    document.addEventListener('change', function (e) {
+      if (e.target && (e.target.id === 'id_payment_tracking' ||
+                       e.target.id === 'id_notify_visitor_on_paid')) {
+        window.cvSyncPaymentNotify();
+      }
+    });
+  }
+  window.cvSyncPaymentNotify();
+})();
+</script>
+"""
 
     def clean_report_fields_json(self):
         """Reject malformed / structurally-invalid Report Fields JSON at save time.
@@ -310,6 +371,9 @@ class class_visit(forms.Form):
             'is_active': 'No',
             'debug_email_list': '',
             'payment_tracking': 'No',
+            'notify_visitor_on_paid': 'No',
+            'visitor_paid_subject': 'Class Visit Payment Processed',
+            'visitor_paid_message': '',
             'report_fields_json': '[]',
             'visit_types': 'Initial|Follow-up|Annual',
             'section_status_filter': 'active',

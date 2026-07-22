@@ -217,3 +217,32 @@ def remind_visitor_report_pending(visit_schedule) -> None:
         VisitSchedule.objects.filter(pk=visit_schedule.pk).update(
             meta={**visit_schedule.meta, 'reminder_last_sent_on': datetime.datetime.now().strftime('%m/%d/%Y')}
         )
+
+
+def notify_visitor_payment_processed(visit_report) -> None:
+    """
+    Email each visitor when a visit report has been marked as paid.
+
+    Gated on payment_tracking == 'Yes' AND notify_visitor_on_paid == 'Yes'.
+    Uses the same shortcodes as the visitor reminder email:
+    {{visitor_first_name}}, {{visit_date}}, {{class_sections}}, {{report_url}}.
+    """
+    cfg = _get_settings()
+    if cfg.get('payment_tracking', 'No') != 'Yes':
+        return
+    if cfg.get('notify_visitor_on_paid', 'No') != 'Yes':
+        return
+
+    visit_schedule = visit_report.visit_schedule
+    subject = cfg.get('visitor_paid_subject', '')
+    message_template = cfg.get('visitor_paid_message', '')
+
+    for visitor in visit_schedule.visitors.all():
+        ctx = {
+            'visitor_first_name': visitor.first_name,
+            'visit_date': visit_schedule.visit_date_sexy,
+            'class_sections': visit_schedule.class_sections_sexy,
+            'report_url': '',
+        }
+        message = render_template(message_template, ctx)
+        send_app_email(subject, message, [visitor.email])

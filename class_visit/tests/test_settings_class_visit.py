@@ -10,6 +10,9 @@ BASE_DATA = {
     'is_active': 'No',
     'debug_email_list': '',
     'payment_tracking': 'No',
+    'notify_visitor_on_paid': 'No',
+    'visitor_paid_subject': '',
+    'visitor_paid_message': '',
     'visit_types': 'Initial|Follow-up|Annual',
     'report_fields_json': '[]',
     'section_status_filter': 'active',
@@ -43,6 +46,28 @@ class ClassVisitSettingsTests(TestCase):
     def test_install_seeds_payment_tracking_no(self):
         CVSettings().install()
         self.assertEqual(CVSettings.from_db().get('payment_tracking'), 'No')
+
+    def test_form_has_visitor_paid_notification_fields(self):
+        form = CVSettings()
+        for name in ['notify_visitor_on_paid', 'visitor_paid_subject', 'visitor_paid_message']:
+            self.assertIn(name, form.fields)
+
+    def test_install_seeds_visitor_paid_notification_defaults(self):
+        CVSettings().install()
+        stored = CVSettings.from_db()
+        self.assertEqual(stored.get('notify_visitor_on_paid'), 'No')
+        self.assertEqual(stored.get('visitor_paid_subject'), 'Class Visit Payment Processed')
+        self.assertEqual(stored.get('visitor_paid_message'), '')
+
+    def test_render_includes_conditional_toggle_script(self):
+        from django.test import RequestFactory
+        from crispy_forms.utils import render_crispy_form
+        form = CVSettings(request=RequestFactory().get(
+            '/?report_id=00000000-0000-0000-0000-000000000000'))
+        html = render_crispy_form(form)
+        # Fields render and the visibility-toggle script is injected.
+        self.assertIn('id_notify_visitor_on_paid', html)
+        self.assertIn('cvSyncPaymentNotify', html)
 
 
 class ReportFieldsJsonValidatorTests(TestCase):
