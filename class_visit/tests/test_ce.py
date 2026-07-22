@@ -587,3 +587,41 @@ class CEIndexPaymentUiTest(TestCase):
         html = self.client.get(reverse('class_visit:ce_index')).content.decode()
         self.assertNotIn('Mark Selected as Paid', html)
         self.assertIn('var CV_PAYMENT_TRACKING = false', html)
+
+
+# ---------------------------------------------------------------------------
+# Regression — tbl_visits payment column must match CEVisitScheduleSerializer
+# ---------------------------------------------------------------------------
+
+class SharedVisitsTablePaymentColumnTest(TestCase):
+    """schedule/class_visits.html (the shared tbl_visits partial embedded on
+    every CE detail page's Visit(s) tab) must ask DataTables for a field the
+    CE serializer actually emits. It previously asked for the removed
+    payment_status_sexy, which the serializer never emits, producing
+    'DataTables warning ... Requested unknown parameter payment_status_sexy'."""
+
+    def _html(self):
+        import uuid
+        from django.template.loader import render_to_string
+        from django.contrib.auth import get_user_model
+        user = get_user_model().objects.create(
+            username=f'shared_visits_{uuid.uuid4().hex[:8]}@x.com',
+            email=f'shared_visits_{uuid.uuid4().hex[:8]}@x.com',
+        )
+        return render_to_string('schedule/class_visits.html', {
+            'record': user,
+            'type': 'by_visitor',
+            'visitor': user,
+            'allow_add_new_visit_date': '0',
+        })
+
+    def test_payment_column_requests_field_serializer_emits(self):
+        from class_visit.class_visit.serializers.ce import CEVisitScheduleSerializer
+
+        # Document the coupling: the serializer this table's ajax endpoint
+        # (CEVisitScheduleViewSet -> CEVisitScheduleSerializer) uses.
+        self.assertIn('payment_status', CEVisitScheduleSerializer().fields)
+
+        html = self._html()
+        self.assertIn('data-data="payment_status"', html)
+        self.assertNotIn('data-data="payment_status_sexy"', html)
