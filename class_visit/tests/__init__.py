@@ -101,6 +101,7 @@ class ClassVisitSettingsTest(TestCase):
         data = {
             'is_active': 'Debug',
             'debug_email_list': 'test@example.com',
+            'payment_tracking': 'No',
             'report_fields_json': '[]',
             'visit_types': 'Initial|Follow-up',
             'section_status_filter': 'active',
