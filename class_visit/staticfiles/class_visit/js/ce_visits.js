@@ -86,7 +86,8 @@ $(document).ready(function () {
             var btns = '<div class="btn-group btn-group-sm">';
 
             if (row.ce_report_url) {
-                btns += '<a href="' + row.ce_report_url + '" class="btn btn-info">View Report</a>';
+                btns += '<a href="#" class="btn btn-info ajax-open-visit" data-src="'
+                    + row.ce_report_url + '?ajax=1">View Report</a>';
             }
 
             btns += '<button type="button" class="btn btn-primary dropdown-toggle" data-toggle="dropdown">Actions</button>';

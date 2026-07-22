@@ -206,8 +206,13 @@ def delete_visit(request, visit_id):
 # ---------------------------------------------------------------------------
 
 @login_required(login_url='/')
+@xframe_options_exempt
 def view_report(request, visit_id):
-    """CE full report view — all report fields regardless of public flag."""
+    """CE full report view — all report fields regardless of public flag.
+
+    Rendered standalone (ajax-base) when opened in the visits-page iframe
+    modal (?ajax=1); full logged-base for direct navigation.
+    """
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
     try:
         report = visit.report
@@ -218,6 +223,9 @@ def view_report(request, visit_id):
     if report:
         fields = report_fields.report_values_for_display(report, public_only=False)
 
+    ajax = request.GET.get('ajax', None)
+    base_template = 'cis/ajax-base.html' if ajax else 'cis/logged-base.html'
+
     return render(
         request,
         'class_visit/ce/view_report.html',
@@ -227,6 +235,8 @@ def view_report(request, visit_id):
             'visit': visit,
             'report': report,
             'report_fields': fields,
+            'base_template': base_template,
+            'ajax': ajax,
         },
     )
 
