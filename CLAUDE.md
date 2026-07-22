@@ -91,7 +91,23 @@ keep that workbook in sync when you add, rename, or remove a setting. Keys:
 `is_active` / `debug_email_list`, `report_fields_json`, `visit_types`, `section_status_filter`,
 `notify_target` / `generic_email`, `notify_teacher_on_schedule` + subject/message,
 `instructor_confirm_link`, `notify_teacher_on_submit` + subject/message,
-`visitor_reminder_subject` / `visitor_reminder_message`, `reminder_every_days`.
+`visitor_reminder_subject` / `visitor_reminder_message`, `reminder_every_days`,
+`payment_tracking`, `notify_visitor_on_paid` / `visitor_paid_subject` / `visitor_paid_message`.
+
+Notes on recent additions:
+- **`report_fields_json` is validated on save** (`settings/class_visit.py::clean_report_fields_json`) —
+  malformed JSON, bad `type`, duplicate `name`, `select` without `options`, and `visit_types`
+  values not in the configured Visit Types are rejected instead of silently storing empty config.
+- Each report-field def may carry **`"visit_types": [...]`** to show only for those visit types
+  (empty/absent = all); filtering lives in `services/report_fields.py` (`get_report_field_defs(type_of_visit=…)`).
+- **Payment tracking** (`payment_tracking`): when Yes, the CE visits page (`views/ce.py::do_bulk_action`,
+  action `mark_as_paid`) can mark submitted reports paid via `VisitReport.mark_as_payment_processed()`,
+  and both the CE and faculty visits tables show a Payment Status column. Marking paid emails each
+  visitor when `notify_visitor_on_paid` = Yes (`services/emails.py::notify_visitor_payment_processed`,
+  same shortcodes as the visitor reminder). The payment fields render at the bottom of the settings
+  form and toggle their visibility via JS injected through the crispy layout.
+- The CE **View Report** opens the report in the visits-page iframe modal (`?ajax=1` → `cis/ajax-base.html`,
+  `@xframe_options_exempt`).
 
 All outbound mail routes through `services/emails.py::send_app_email`, which honors
 `is_active` (Yes / No / Debug). Email bodies are settings strings rendered with Django template

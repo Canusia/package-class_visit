@@ -134,14 +134,18 @@ python manage.py collectstatic --noinput
 **Settings → Classes → Class Visit Settings** (setting key `class_visit`):
 
 - `is_active` (Yes / No / Debug) + `debug_email_list`
-- `report_fields_json` — JSON array defining the report fields: `{"name","label","type"(text|textarea|select|checkbox|date),"public"(bool),"required"(bool),"options"[…]}`. Values are stored in `VisitReport.meta`; `public` controls instructor visibility and public-only PDFs.
-- `visit_types` — pipe-delimited (e.g. `Initial|Follow-up|Annual`)
+- `report_fields_json` — JSON array defining the report fields: `{"name","label","type"(text|textarea|select|checkbox|date),"public"(bool),"required"(bool),"options"[…],"visit_types"[…]}`. Values are stored in `VisitReport.meta`; `public` controls instructor visibility and public-only PDFs. **Validated on save** — malformed JSON, bad `type`, duplicate `name`, `select` without `options`, or a `visit_types` value not in the configured Visit Types is rejected (rather than silently blanking the fields). Optional **`visit_types`** limits a field to those visit types (omit/empty = all types).
+- `visit_types` — pipe-delimited (e.g. `Initial|Follow-up|Annual`). Rendered before Report Fields in the settings form.
 - `section_status_filter` — `active` (status `A`) / `inactive` (`C`) / `all`; drives the schedulable-section lists
 - `notify_target` (course administrator / generic email) + `generic_email`
 - `notify_teacher_on_schedule` + `teacher_scheduled_subject` / `teacher_scheduled_message`
 - `instructor_confirm_link` — when Yes, the `{{confirmation_link}}` shortcode is populated in the scheduled email
 - `notify_teacher_on_submit` + `teacher_submit_subject` / `teacher_submit_message`
 - `visitor_reminder_subject` / `visitor_reminder_message` + `reminder_every_days`
+- `payment_tracking` (Yes / No) — when Yes, CE staff can **Mark Selected as Paid** on the CE visits page, and both the CE and faculty visits tables show a **Payment Status** column. (Shown at the bottom of the settings form.)
+- `notify_visitor_on_paid` (Yes / No) + `visitor_paid_subject` / `visitor_paid_message` — when payment tracking is on and this is Yes, each visitor is emailed when their report is marked paid. The message uses the same shortcodes as the visitor reminder: `{{visitor_first_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{report_url}}`.
+
+The CE **View Report** button opens the report in an in-page iframe modal.
 
 ---
 
