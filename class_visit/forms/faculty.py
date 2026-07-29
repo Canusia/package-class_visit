@@ -223,6 +223,11 @@ class VisitScheduleForm(forms.Form):
 
         data = self.cleaned_data
 
+        # UUIDField(default=uuid.uuid4) assigns id on VisitSchedule() before
+        # save, so visit.pk is never None for creates — gate on whether the
+        # form was opened for edit (feature: faculty schedule email on create).
+        is_new = self._visit_schedule is None
+
         if self._visit_schedule:
             visit = self._visit_schedule
             visit.class_sections.clear()
@@ -236,8 +241,6 @@ class VisitScheduleForm(forms.Form):
 
         if data.get('pre_visit_note'):
             visit.meta['pre_visit_note'] = data['pre_visit_note']
-
-        is_new = visit.pk is None
 
         if commit:
             visit.save()
