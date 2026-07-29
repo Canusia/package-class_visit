@@ -2,8 +2,9 @@
 import logging
 
 from django.contrib.auth.decorators import login_required, user_passes_test
-from django.http import JsonResponse, HttpResponse
+from django.http import Http404, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
+from django.urls import reverse
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
 
@@ -231,21 +232,54 @@ def view_report(request, visit_id):
         fields = report_fields.report_values_for_display(report, public_only=False)
 
     ajax = request.GET.get('ajax', None)
-    base_template = 'cis/ajax-base.html' if ajax else 'cis/logged-base.html'
+    template = (
+        'class_visit/ce/view_report_ajax.html' if ajax
+        else 'class_visit/ce/view_report.html'
+    )
 
     return render(
         request,
-        'class_visit/ce/view_report.html',
+        template,
         {
             'menu': draw_menu(None, 'classes', 'class_visits', 'ce'),
             'page_title': 'Class Visit Report',
             'visit': visit,
             'report': report,
             'report_fields': fields,
-            'base_template': base_template,
+            'can_download': report is not None,
+            'pdf_url': reverse(
+                'class_visit:ce_report_pdf', kwargs={'visit_id': visit.id}),
             'ajax': ajax,
         },
     )
+
+
+@login_required(login_url='/')
+def report_pdf(request, visit_id):
+    """Download one visit's report as an all-fields PDF letter.
+
+    CE staff see every field regardless of its public flag, matching what
+    view_report shows. Draft reports are downloadable too — CE can already
+    read a draft on the page.
+    """
+    visit = get_object_or_404(VisitSchedule, pk=visit_id)
+
+    try:
+        report = visit.report
+    except Exception:
+        report = None
+
+    if report is None:
+        raise Http404
+
+    pdf = pdf_service.visit_letter_pdf(report, public_only=False)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    # visit_date_sexy is m/d/Y — the slashes are not filename-safe
+    stamp = visit.visit_date_sexy.replace('/', '-')
+    response['Content-Disposition'] = (
+        f'attachment; filename="class_visit_report_{stamp}.pdf"'
+    )
+    return response
 
 
 # ---------------------------------------------------------------------------

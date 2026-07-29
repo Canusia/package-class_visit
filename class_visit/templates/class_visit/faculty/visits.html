@@ -108,9 +108,11 @@
                       <th data-data="visit_date" data-name="visit_date">Visit Date</th>
                       <th data-data="type_of_visit" data-name="type_of_visit">Type</th>
                       <th data-data="createdon" data-name="createdon">Scheduled On</th>
-                      {# nested + computed columns have no filterable model field behind
-                         them — leaving them searchable makes the global search box
-                         500 the endpoint with a FieldError #}
+                      {% comment %}
+                      nested + computed columns have no filterable model field
+                      behind them — leaving them searchable makes the global
+                      search box 500 the endpoint with a FieldError
+                      {% endcomment %}
                       <th data-data="class_sections" searchable="0" data-name="class_sections">Class Section(s)</th>
                       <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)</th>
                       <th data-data="report_status" searchable="0" data-name="report_status">Report Status</th>

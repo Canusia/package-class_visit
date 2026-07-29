@@ -17,6 +17,7 @@ from ..views.ce import (
     manage_visit,
     delete_visit,
     view_report,
+    report_pdf,
     not_needed_add,
     not_needed_remove,
     not_needed_picker,
@@ -64,6 +65,11 @@ urlpatterns = [
         'report/<uuid:visit_id>/',
         _ce(view_report),
         name='ce_view_report',
+    ),
+    path(
+        'report/<uuid:visit_id>/pdf/',
+        _ce(report_pdf),
+        name='ce_report_pdf',
     ),
 
     # Not-needed visit management

@@ -333,6 +333,8 @@ class CEFullReportViewTest(TestCase):
         mock_report = MagicMock()
         mock_visit = MagicMock()
         mock_visit.report = mock_report
+        # the view reverses ce_report_pdf off visit.id, so it needs a real UUID
+        mock_visit.id = visit_id
         mock_404.return_value = mock_visit
         mock_rf.report_values_for_display.return_value = []
 
@@ -350,34 +352,38 @@ class CEFullReportViewTest(TestCase):
     @patch('class_visit.class_visit.views.ce.get_object_or_404')
     def test_view_report_ajax_is_frameable_and_uses_modal_base(self, mock_404, mock_rf):
         import uuid
+        visit_id = uuid.uuid4()
         mock_visit = MagicMock()
         mock_visit.report = MagicMock()
+        mock_visit.id = visit_id
         mock_404.return_value = mock_visit
         mock_rf.report_values_for_display.return_value = []
 
         with patch('class_visit.class_visit.views.ce.draw_menu', return_value={}):
-            resp = self.client.get(f'/ce/class_visits/report/{uuid.uuid4()}/?ajax=1')
+            resp = self.client.get(f'/ce/class_visits/report/{visit_id}/?ajax=1')
 
         self.assertEqual(resp.status_code, 200)
         # @xframe_options_exempt -> no X-Frame-Options header, so it can be iframed
         self.assertFalse(resp.has_header('X-Frame-Options'))
-        # standalone modal base, not the full sidebar layout
-        self.assertEqual(resp.context['base_template'], 'cis/ajax-base.html')
+        # self-contained document for the frame, not the full sidebar layout
+        self.assertTemplateUsed(resp, 'class_visit/ce/view_report_ajax.html')
 
     @patch('class_visit.class_visit.views.ce.report_fields')
     @patch('class_visit.class_visit.views.ce.get_object_or_404')
     def test_view_report_direct_nav_uses_full_base(self, mock_404, mock_rf):
         import uuid
+        visit_id = uuid.uuid4()
         mock_visit = MagicMock()
         mock_visit.report = MagicMock()
+        mock_visit.id = visit_id
         mock_404.return_value = mock_visit
         mock_rf.report_values_for_display.return_value = []
 
         with patch('class_visit.class_visit.views.ce.draw_menu', return_value={}):
-            resp = self.client.get(f'/ce/class_visits/report/{uuid.uuid4()}/')
+            resp = self.client.get(f'/ce/class_visits/report/{visit_id}/')
 
         self.assertEqual(resp.status_code, 200)
-        self.assertEqual(resp.context['base_template'], 'cis/logged-base.html')
+        self.assertTemplateUsed(resp, 'class_visit/ce/view_report.html')
 
 
 class CEBulkPDFTest(TestCase):

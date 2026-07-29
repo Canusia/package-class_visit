@@ -18,8 +18,10 @@ Context: visit, public_values, can_download, pdf_url, ajax
   </div>
   <div class="card-body">
 
-    {# Visit details — same header block the PDF letter carries
-       (class_visit/letter_body.html), plus the visitor name(s). #}
+    {% comment %}
+    Visit details — same header block the PDF letter carries
+    (class_visit/letter_body.html), plus the visitor name(s).
+    {% endcomment %}
     <table class="table table-striped mb-4">
       <tbody>
         <tr>

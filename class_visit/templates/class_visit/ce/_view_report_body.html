@@ -1,0 +1,89 @@
+{% comment %}
+Shared body for the CE visit report — rendered inside the CE chrome by
+view_report.html and standalone inside the visits-page iframe modal by
+view_report_ajax.html.
+
+CE sees every report field regardless of its public flag.
+
+Context: visit, report, report_fields, can_download, pdf_url, ajax
+{% endcomment %}
+<div class="row mb-3">
+  <div class="col d-flex align-items-start justify-content-between">
+    <div>
+      <h1 class="h3 text-gray-800">{{ page_title }}</h1>
+      {% if not ajax %}
+      <a href="{% url 'class_visit:ce_index' %}" class="btn btn-sm btn-outline-secondary">
+        &larr; Back to Visits
+      </a>
+      {% endif %}
+    </div>
+    {% if can_download %}
+    <a href="{{ pdf_url }}" class="btn btn-sm btn-outline-secondary">
+      <i class="fas fa-file-pdf"></i>&nbsp;Download as PDF
+    </a>
+    {% endif %}
+  </div>
+</div>
+
+<div class="card mb-4">
+  <div class="card-header"><strong>Visit Details</strong></div>
+  <div class="card-body">
+    <dl class="row">
+      <dt class="col-sm-3">Visit Date</dt>
+      <dd class="col-sm-9">{{ visit.visit_date|date:"m/d/Y" }}</dd>
+      <dt class="col-sm-3">Type of Visit</dt>
+      <dd class="col-sm-9">{{ visit.type_of_visit }}</dd>
+      <dt class="col-sm-3">Instructor</dt>
+      <dd class="col-sm-9">{{ visit.teacher }}</dd>
+      <dt class="col-sm-3">Class Section(s)</dt>
+      <dd class="col-sm-9">
+        {% for section in visit.class_sections.all %}
+          <p class="mb-2">
+            {{ section.course }} ({{ section.class_number }}/{{ section.section_number }})<br>
+            <span class="text-muted">{{ section.period_time|default:"" }}</span>
+          </p>
+        {% empty %}
+          &mdash;
+        {% endfor %}
+      </dd>
+      <dt class="col-sm-3">Visitor(s)</dt>
+      <dd class="col-sm-9">
+        {% for name in visit.visitor_names %}
+          {{ name }}{% if not forloop.last %}<br>{% endif %}
+        {% empty %}
+          &mdash;
+        {% endfor %}
+      </dd>
+    </dl>
+  </div>
+</div>
+
+{% if report %}
+<div class="card mb-4">
+  <div class="card-header">
+    <strong>Visit Report</strong>
+    <span class="badge badge-{% if report.status == 'Submitted' %}success{% else %}warning{% endif %} ml-2">
+      {{ report.status }}
+    </span>
+  </div>
+  <div class="card-body">
+    {% if report_fields %}
+      <dl class="row">
+        {% for field in report_fields %}
+          <dt class="col-sm-3">{{ field.label }}</dt>
+          <dd class="col-sm-9">{{ field.value|safe }}</dd>
+        {% endfor %}
+      </dl>
+    {% else %}
+      <p class="text-muted">No report fields configured.</p>
+    {% endif %}
+  </div>
+</div>
+{% else %}
+<div class="alert alert-info">No report has been submitted for this visit.</div>
+{% endif %}
+
+{% if ajax %}
+<button type="button" class="btn btn-secondary btn-sm"
+        onclick="window.parent.closeVisitModal()">Close</button>
+{% endif %}
