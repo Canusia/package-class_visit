@@ -154,6 +154,10 @@ class PublicReportDetailTest(TestCase):
 
         teacher = MagicMock()
 
+        # The view reverses the report_pdf URL off visit.id, so the mock needs a
+        # real UUID rather than a MagicMock attribute.
+        mock_visit.id = visit_id
+
         # Mock VisitSchedule at module level to avoid real DB filter with MagicMock teacher
         mock_vs = MagicMock()
         mock_qs = MagicMock()

@@ -8,6 +8,7 @@ section it covered — all of which the PDF letter
 The details block mirrors that letter header and adds the visitor name(s).
 """
 import uuid
+from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
@@ -21,7 +22,7 @@ from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
 
-from class_visit.class_visit.models import VisitSchedule
+from class_visit.class_visit.models import VisitReport, VisitSchedule
 
 User = get_user_model()
 
@@ -97,6 +98,90 @@ class InstructorReportDetailsTest(TestCase):
         html = self.client.get(self.url).content.decode()
         for label in ('Instructor', 'Visit Date', 'Type of Visit', 'Class Section(s)'):
             self.assertIn(label, html)
+
+    def test_ajax_render_is_standalone_and_frameable(self):
+        """?ajax=1 is what the visits-page modal loads in its iframe."""
+        resp = self.client.get(self.url + '?ajax=1')
+        self.assertEqual(resp.status_code, 200)
+        self.assertTemplateUsed(
+            resp, 'class_visit/instructor/report_detail_ajax.html')
+        html = resp.content.decode()
+        # own document, not the portal chrome
+        self.assertIn('<!DOCTYPE html>', html)
+        self.assertNotIn('Back to My Visits', html)
+        self.assertIn('window.parent.closeReportModal()', html)
+        # X_FRAME_OPTIONS defaults to DENY, so the view must be exempt
+        self.assertNotIn('X-Frame-Options', resp)
+
+    def test_standalone_render_keeps_the_portal_chrome(self):
+        resp = self.client.get(self.url)
+        self.assertTemplateUsed(resp, 'class_visit/instructor/report_detail.html')
+        self.assertIn('Back to My Visits', resp.content.decode())
+
+    def test_index_wires_the_report_modal(self):
+        html = self.client.get(reverse('instructor_class_visit:index')).content.decode()
+        self.assertIn('id="report_modal"', html)
+        self.assertIn('id="report_modal_src"', html)
+
+    def _submit_report(self):
+        return VisitReport.objects.create(
+            visit_schedule=self.visit, status='Submitted',
+            teacher_discussion='td', student_discussion='sd',
+            visit_letter='letter', payment_processed='No')
+
+    def test_no_pdf_link_until_the_report_is_submitted(self):
+        html = self.client.get(self.url).content.decode()
+        self.assertNotIn('Download as PDF', html)
+
+    def test_pdf_link_shown_once_submitted(self):
+        self._submit_report()
+        pdf_url = reverse(
+            'instructor_class_visit:report_pdf', kwargs={'visit_id': self.visit.id})
+        for suffix in ('', '?ajax=1'):
+            html = self.client.get(self.url + suffix).content.decode()
+            self.assertIn('Download as PDF', html, suffix)
+            self.assertIn(pdf_url, html, suffix)
+
+    def test_pdf_link_shown_when_no_field_is_public(self):
+        """Downloadability follows the report's status, not whether any of its
+        fields happen to be flagged public."""
+        self._submit_report()
+        resp = self.client.get(self.url)
+        self.assertFalse(resp.context['public_values'])
+        self.assertTrue(resp.context['can_download'])
+        self.assertIn('Download as PDF', resp.content.decode())
+
+    @patch('class_visit.class_visit.views.instructor.visit_letter_pdf')
+    def test_pdf_download_returns_public_only_letter(self, mock_pdf):
+        mock_pdf.return_value = b'%PDF-1.4 fake'
+        report = self._submit_report()
+        resp = self.client.get(reverse(
+            'instructor_class_visit:report_pdf', kwargs={'visit_id': self.visit.id}))
+        self.assertEqual(resp.status_code, 200)
+        self.assertEqual(resp['Content-Type'], 'application/pdf')
+        self.assertIn('attachment;', resp['Content-Disposition'])
+        # m/d/Y slashes are not filename-safe
+        self.assertNotIn('/', resp['Content-Disposition'].split('filename=')[1])
+        mock_pdf.assert_called_once_with(report, public_only=True)
+
+    def test_pdf_download_404s_for_an_unsubmitted_report(self):
+        resp = self.client.get(reverse(
+            'instructor_class_visit:report_pdf', kwargs={'visit_id': self.visit.id}))
+        self.assertEqual(resp.status_code, 404)
+
+    @patch('class_visit.class_visit.views.instructor.visit_letter_pdf')
+    def test_pdf_download_404s_for_another_instructors_visit(self, mock_pdf):
+        mock_pdf.return_value = b'%PDF-1.4 fake'
+        self._submit_report()
+        other = User.objects.create_user(
+            username=f'oth_{_sfx()}', email=f'oth_{_sfx()}@x.com', password='x')
+        other.groups.add(Group.objects.get(name='instructor'))
+        Teacher.objects.create(user=other)
+        self.client.force_login(other)
+        resp = self.client.get(reverse(
+            'instructor_class_visit:report_pdf', kwargs={'visit_id': self.visit.id}))
+        self.assertEqual(resp.status_code, 404)
+        mock_pdf.assert_not_called()
 
     def test_another_instructors_visit_is_not_readable(self):
         other = User.objects.create_user(

@@ -1,0 +1,24 @@
+{% comment %}
+Standalone (iframe) rendering of the instructor visit report, served with
+?ajax=1 into the visits-page modal. Self-contained document loading the same
+CSS as the host app — the same pattern as faculty/edit_visit_report.html; the
+instructor portal chrome (sidebar/topbar) would be wrong inside a modal.
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>Visit Report</title>
+  {% load static %}
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+  <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+</head>
+<body class="bg-white">
+  <div class="p-2">
+    {% include "class_visit/instructor/_report_detail_body.html" %}
+  </div>
+</body>
+</html>

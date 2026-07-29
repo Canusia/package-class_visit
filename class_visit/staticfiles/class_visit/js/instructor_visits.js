@@ -75,12 +75,24 @@ $(document).ready(function () {
         render: function (data, type, row) {
           var html = '';
           if (row.has_submitted_report) {
-            html += '<a href="' + row.report_detail_url + '" class="btn btn-xs btn-outline-primary">View Report</a>';
+            html += '<a href="#" class="btn btn-xs btn-outline-primary ajax-view-report"'
+              + ' data-src="' + row.report_detail_url + '?ajax=1">View Report</a>';
           }
           return html || '-';
         }
       }
     ]
+  });
+
+  // Open the report in the iframe modal
+  window.closeReportModal = function () {
+    $('#report_modal').modal('hide');
+  };
+
+  $(document).on('click', '.ajax-view-report', function (e) {
+    e.preventDefault();
+    $('#report_modal_src').attr('src', $(this).data('src'));
+    $('#report_modal').modal({ show: true, backdrop: 'static' });
   });
 
   // Select-all checkbox

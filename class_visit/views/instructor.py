@@ -8,6 +8,7 @@ from django.shortcuts import render, get_object_or_404
 from django.template.loader import get_template
 from django.urls import reverse
 from django.http import HttpResponse, Http404
+from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
 
 from rest_framework import viewsets
@@ -20,7 +21,7 @@ from ..models import VisitSchedule, VisitReport
 from ..serializers.instructor import InstructorVisitScheduleSerializer
 from ..services import report_fields as rf_service
 from ..services.confirmation import confirm_visit as svc_confirm
-from ..services.pdf import visit_letters_pdf
+from ..services.pdf import visit_letter_pdf, visit_letters_pdf
 
 logger = logging.getLogger(__name__)
 
@@ -92,6 +93,7 @@ def index(request):
 
 
 @login_required
+@xframe_options_exempt
 def report_detail(request, visit_id):
     """
     Show public-only report fields for a submitted visit.
@@ -129,13 +131,60 @@ def report_detail(request, visit_id):
         if public_values is None:
             public_values = []
 
+    ajax = request.GET.get('ajax', None)
+    template = (
+        'class_visit/instructor/report_detail_ajax.html' if ajax
+        else 'class_visit/instructor/report_detail.html'
+    )
+
     menu = draw_menu(None, 'instructor_class_visit', '', 'instructor')
-    return render(request, 'class_visit/instructor/report_detail.html', {
+    return render(request, template, {
         'menu': menu,
         'page_name': 'Visit Report',
         'visit': visit,
         'public_values': public_values,
+        # Downloadable whenever the report is submitted — not tied to whether
+        # any of its fields happen to be marked public.
+        'can_download': bool(report and report.status == 'Submitted'),
+        'pdf_url': reverse(
+            'instructor_class_visit:report_pdf', kwargs={'visit_id': visit.id}),
+        'ajax': ajax,
     })
+
+
+@login_required
+def report_pdf(request, visit_id):
+    """Download one visit's report as a public-only PDF letter.
+
+    Same scoping as report_detail: the instructor must own one of the visit's
+    sections, and only submitted reports are downloadable. Instructors always
+    get public_only=True output, matching the bulk export.
+    """
+    teacher = _get_teacher_or_none(request)
+    if teacher is None:
+        raise Http404
+
+    visit = get_object_or_404(
+        VisitSchedule.objects.filter(class_sections__teacher=teacher).distinct(),
+        pk=visit_id,
+    )
+
+    try:
+        report = visit.report
+    except Exception:
+        report = visit.has_report() or None
+
+    if report is None or report.status != 'Submitted':
+        raise Http404
+
+    pdf = visit_letter_pdf(report, public_only=True)
+    response = HttpResponse(pdf, content_type='application/pdf')
+    # visit_date_sexy is m/d/Y — the slashes are not filename-safe
+    stamp = visit.visit_date_sexy.replace('/', '-')
+    response['Content-Disposition'] = (
+        f'attachment; filename="class_visit_report_{stamp}.pdf"'
+    )
+    return response
 
 
 def confirm_visit_view(request, token):

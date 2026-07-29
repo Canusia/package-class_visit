@@ -39,6 +39,22 @@
   <div id="hidden_ids"></div>
 </form>
 
+{# View Report opens report_detail?ajax=1 in here #}
+<div id="report_modal" class="modal fade" role="dialog" tabindex="-1">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg">
+    <div class="modal-content" style="min-height:550px;">
+      <div class="modal-body" style="position:relative; min-height:50%;">
+        <iframe id="report_modal_src" width="100%" height="100%"
+                style="position:absolute; height:96%; width:97%;"
+                frameborder="0"></iframe>
+      </div>
+      <div class="modal-footer">
+        <button type="button" class="btn btn-secondary btn-sm" data-dismiss="modal">Close</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 {% comment %}
 Inline in content — host instructor bases often omit an extra_js block, which
 previously dropped this script and left the DataTable empty.

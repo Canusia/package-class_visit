@@ -9,6 +9,7 @@ from cis.utils import user_has_instructor_role
 from ..views.instructor import (
     index,
     report_detail,
+    report_pdf,
     confirm_visit_view,
     InstructorVisitScheduleViewSet,
     do_bulk_action,
@@ -33,6 +34,11 @@ urlpatterns = [
         'report/<uuid:visit_id>/',
         _guard(report_detail),
         name='report_detail',
+    ),
+    path(
+        'report/<uuid:visit_id>/pdf/',
+        _guard(report_pdf),
+        name='report_pdf',
     ),
     path(
         'confirm/<str:token>/',
