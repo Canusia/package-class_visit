@@ -317,7 +317,9 @@ class VisitReportDynamicForm(forms.Form):
         for field_defn in report_fields.get_report_field_defs():
             name = field_defn.get('name', '') if isinstance(field_defn, dict) else field_defn
             if name in data:
-                report.meta[name] = data[name]
+                # meta is a JSONField with the stock encoder — a date field's
+                # cleaned value is a datetime.date and would break save()
+                report.meta[name] = report_fields.coerce_meta_value(data[name])
 
         report.meta['created_by'] = str(created_by_user.id)
         was_draft = report.status != 'Submitted'

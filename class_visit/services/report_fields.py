@@ -11,9 +11,41 @@ Field def shape:
       "options": list[str],  # only used for type=select
     }
 """
+import datetime
+import decimal
 import json
 
 from django import forms
+
+# Values written into VisitReport.meta must be JSON-native — meta is a JSONField
+# using the stock encoder. Dates in particular arrive as datetime.date from
+# forms.DateField and would raise "Object of type date is not JSON
+# serializable" on save.
+DISPLAY_DATE_FORMAT = '%m/%d/%Y'
+
+
+def coerce_meta_value(value):
+    """Return ``value`` in a form json.dumps can handle.
+
+    Dates and times become ISO strings — which is also the format
+    ``<input type="date">`` expects back as its value, so the round-trip into
+    the form's initial data needs no further conversion.
+    """
+    if isinstance(value, (datetime.datetime, datetime.date, datetime.time)):
+        return value.isoformat()
+    if isinstance(value, decimal.Decimal):
+        return str(value)
+    return value
+
+
+def _format_date_for_display(value):
+    """Render a stored ISO date as m/d/Y, leaving anything unparseable as-is."""
+    if not value or not isinstance(value, str):
+        return value
+    try:
+        return datetime.date.fromisoformat(value[:10]).strftime(DISPLAY_DATE_FORMAT)
+    except ValueError:
+        return value
 
 
 def _get_settings() -> dict:
@@ -148,5 +180,7 @@ def report_values_for_display(visit_report, public_only: bool = False) -> list:
         name = defn.get('name', '')
         label = defn.get('label', name)
         value = visit_report.meta.get(name, '')
+        if defn.get('type') == 'date':
+            value = _format_date_for_display(value)
         result.append({'label': label, 'value': value})
     return result
