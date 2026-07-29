@@ -102,7 +102,13 @@ def report_detail(request, visit_id):
         raise Http404
 
     visit = get_object_or_404(
-        VisitSchedule.objects.filter(class_sections__teacher=teacher).distinct(),
+        VisitSchedule.objects.filter(
+            class_sections__teacher=teacher,
+        ).prefetch_related(
+            'visitors',
+            'class_sections__course',
+            'class_sections__teacher__user',
+        ).distinct(),
         pk=visit_id,
     )
 
