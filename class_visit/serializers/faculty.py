@@ -29,8 +29,9 @@ class _MinimalVisitScheduleSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = VisitSchedule
-        fields = ['id', 'visit_date', 'manage_visit_url']
-        datatables_always_serialize = ['id', 'visit_date', 'manage_visit_url']
+        fields = ['id', 'visit_date', 'type_of_visit', 'manage_visit_url']
+        datatables_always_serialize = [
+            'id', 'visit_date', 'type_of_visit', 'manage_visit_url']
 
 
 class FacultySchedulableSectionSerializer(serializers.ModelSerializer):
@@ -154,6 +155,7 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
         datatables_always_serialize = [
             'id',
             'visit_date',
+            'type_of_visit',
             'createdon',
             'class_sections',
             'visitors',

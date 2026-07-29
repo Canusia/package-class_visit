@@ -106,14 +106,18 @@
                     <tr>
                       <th><input type="checkbox" id="select_all_visits"></th>
                       <th data-data="visit_date" data-name="visit_date">Visit Date</th>
+                      <th data-data="type_of_visit" data-name="type_of_visit">Type</th>
                       <th data-data="createdon" data-name="createdon">Scheduled On</th>
-                      <th data-data="class_sections" data-name="class_sections">Class Section(s)</th>
-                      <th data-data="visitors" data-name="visitors">Visitor(s)</th>
-                      <th data-data="report_status" data-name="report_status">Report Status</th>
+                      {# nested + computed columns have no filterable model field behind
+                         them — leaving them searchable makes the global search box
+                         500 the endpoint with a FieldError #}
+                      <th data-data="class_sections" searchable="0" data-name="class_sections">Class Section(s)</th>
+                      <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)</th>
+                      <th data-data="report_status" searchable="0" data-name="report_status">Report Status</th>
                       {% if payment_tracking_enabled %}
-                      <th data-data="payment_status" data-name="payment_status">Payment Status</th>
+                      <th data-data="payment_status" searchable="0" data-name="payment_status">Payment Status</th>
                       {% endif %}
-                      <th data-data="id" data-name="id">Actions</th>
+                      <th data-data="id" searchable="0" data-name="id">Actions</th>
                     </tr>
                   </thead>
                 </table>
@@ -126,6 +130,12 @@
         <script>
         var tbl_visits, tbl_class_sections;
         var CV_PAYMENT_TRACKING = {% if payment_tracking_enabled %}true{% else %}false{% endif %};
+
+        /* DataTables renderers return HTML — escape free-text DB values before
+           concatenating them in. */
+        function esc(s) {
+          return $('<div>').text(s == null ? '' : s).html();
+        }
 
         $(document).ready(function () {
 
@@ -162,8 +172,12 @@
                   var html = '';
                   if (row.visit_schedule) {
                     $.each(row.visit_schedule, function(i, v) {
+                      var label = esc(v.visit_date) || 'Edit';
+                      if (v.type_of_visit) {
+                        label += ' <span class="text-muted">(' + esc(v.type_of_visit) + ')</span>';
+                      }
                       html += '<a href="#visits" class="ajax-open-modal" data-src="' + v.manage_visit_url + '">'
-                        + (v.visit_date || 'Edit') + ' <i class="fas fa-pencil-alt"></i></a><br>';
+                        + label + ' <i class="fas fa-pencil-alt"></i></a><br>';
                     });
                   }
                   html += '<a href="#visits" class="btn btn-sm btn-info ajax-open-modal mt-1"'
@@ -186,6 +200,7 @@
                   return '<input type="checkbox" class="visit-select" value="' + row.id + '">';
               }},
               { render: function(d, t, row) { return row.visit_date || '-'; } },
+              { render: function(d, t, row) { return esc(row.type_of_visit) || '-'; } },
               { render: function(d, t, row) { return row.createdon || ''; } },
               { render: function(d, t, row) {
                   var s = '';
