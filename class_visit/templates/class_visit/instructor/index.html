@@ -39,8 +39,10 @@
   <div id="hidden_ids"></div>
 </form>
 
-{# Inline in content — host instructor bases often omit {% block extra_js %},
-   which previously dropped this script and left the DataTable empty. #}
+{% comment %}
+Inline in content — host instructor bases often omit an extra_js block, which
+previously dropped this script and left the DataTable empty.
+{% endcomment %}
 <script>
   var CV_API_URL = "{{ api_url }}";
   var CV_BULK_URL = "{{ bulk_url }}";

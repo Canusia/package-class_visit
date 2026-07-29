@@ -55,14 +55,20 @@ class CEVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
         )
 
         term_id = self.request.GET.get('term_id')
+        academic_year_id = self.request.GET.get('academic_year_id')
         course_id = self.request.GET.get('course_id')
         visitor_id = self.request.GET.get('visitor_id')
         teacher_id = self.request.GET.get('teacher_id')
         highschool_id = self.request.GET.get('highschool_id')
+        class_section_id = self.request.GET.get('class_section_id')
         report_status = self.request.GET.get('report_status')
 
         if term_id:
             qs = qs.filter(class_sections__term__id=term_id)
+        if academic_year_id:
+            qs = qs.filter(class_sections__term__academic_year__id=academic_year_id)
+        if class_section_id:
+            qs = qs.filter(class_sections__id=class_section_id)
         if course_id:
             if course_id == '-2':
                 course_ids = self.request.user.get_courses_overseeing()
