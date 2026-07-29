@@ -462,10 +462,9 @@ class BulkExportPDFTest(TestCase):
 
 
 # ---------------------------------------------------------------------------
-# Regression: the index page must render the DataTable init JS.
-# base_instructor.html previously rendered {% block extra_css %} but NOT
-# {% block extra_js %}, so instructor_visits.js (which calls .DataTable) was
-# silently dropped and the table stayed empty ("no visits").
+# Regression: the index page must render the DataTable init JS inside content.
+# Host instructor bases often omit {% block extra_js %}; scripts must live in
+# {% block content %} or the table stays empty (no visit-schedule XHR).
 # ---------------------------------------------------------------------------
 class InstructorIndexRendersTableJsTest(TestCase):
     @classmethod
@@ -493,7 +492,7 @@ class InstructorIndexRendersTableJsTest(TestCase):
         resp = client.get(reverse('instructor_class_visit:index'))
         self.assertEqual(resp.status_code, 200)
         html = resp.content.decode()
-        # The extra_js block must render so the table actually initializes.
+        # Scripts are inlined in content so they render without host extra_js.
         self.assertIn('instructor_visits.js', html)
         self.assertIn('CV_API_URL', html)
         # The old broken static path must be gone.

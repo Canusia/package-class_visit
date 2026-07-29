@@ -123,8 +123,9 @@ def _faculty_form_save_with_mocks(settings_dict, is_new=True):
     visitor_id = uuid.uuid4()
 
     mock_visit = MagicMock()
-    # pk=None simulates a pre-save instance so is_new=True in form.save()
-    mock_visit.pk = None
+    # Real VisitSchedule() gets a UUID pk before save; create path must still
+    # notify even when pk is already set (is_new is based on _visit_schedule).
+    mock_visit.pk = uuid.uuid4()
     mock_visit.meta = {}
     mock_visit.class_sections = MagicMock()
     mock_visit.visitors = MagicMock()
@@ -189,6 +190,7 @@ class FacultyFormNotifyOnceTest(TestCase):
         mock_visit, mock_notify = _faculty_form_save_with_mocks(settings_dict, is_new=True)
         mock_notify.assert_called_once_with(mock_visit)
         mock_visit.notify_instructor.assert_not_called()
+        mock_visit.ensure_confirmation_token.assert_called_once()
 
     def test_new_service_not_called_when_setting_is_no(self):
         """When notify_teacher_on_schedule=No, new service must not be called."""
@@ -199,6 +201,17 @@ class FacultyFormNotifyOnceTest(TestCase):
         }
         _, mock_notify = _faculty_form_save_with_mocks(settings_dict, is_new=True)
         mock_notify.assert_not_called()
+
+    def test_new_service_not_called_on_edit(self):
+        """Edit path (_visit_schedule set) must not re-send the schedule email."""
+        settings_dict = {
+            'section_status_filter': 'active',
+            'visit_types': 'Observation',
+            'notify_teacher_on_schedule': 'Yes',
+        }
+        mock_visit, mock_notify = _faculty_form_save_with_mocks(settings_dict, is_new=False)
+        mock_notify.assert_not_called()
+        mock_visit.ensure_confirmation_token.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

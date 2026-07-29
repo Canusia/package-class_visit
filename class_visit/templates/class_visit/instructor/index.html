@@ -38,9 +38,9 @@
   <input type="hidden" name="action" value="export_pdf">
   <div id="hidden_ids"></div>
 </form>
-{% endblock %}
 
-{% block extra_js %}
+{# Inline in content — host instructor bases often omit {% block extra_js %},
+   which previously dropped this script and left the DataTable empty. #}
 <script>
   var CV_API_URL = "{{ api_url }}";
   var CV_BULK_URL = "{{ bulk_url }}";
