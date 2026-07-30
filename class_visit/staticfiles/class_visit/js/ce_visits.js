@@ -15,6 +15,16 @@ window.closeNNModal = function () {
     $('#nn_modal').modal('hide');
 };
 
+/* One count per visited section, in the same order as the Section(s) cell, so
+   a visit covering several sections stays readable. */
+function renderSectionCounts(sections, key) {
+    if (!sections || !sections.length) return '—';
+    return sections.map(function (s) {
+        var n = s[key];
+        return (n === null || typeof n === 'undefined') ? '—' : n;
+    }).join('<br>');
+}
+
 $(document).ready(function () {
 
     /* ===== All Visits columns (built before init so the payment column can be
@@ -43,6 +53,26 @@ $(document).ready(function () {
                     return s.course.name + ' @ ' + (s.highschool ? s.highschool.name : '') +
                         '<br><span class="text-muted">(' + s.class_number + '-' + s.section_number + ')</span>';
                 }).join('<br>');
+            },
+        },
+        /* # Students — every registration on the visited section(s) */
+        {
+            data: 'class_sections',
+            name: 'class_sections',
+            orderable: false,
+            searchable: false,
+            render: function (data) {
+                return renderSectionCounts(data, 'num_students');
+            },
+        },
+        /* # Registered — registrations with status 'registered' */
+        {
+            data: 'class_sections',
+            name: 'class_sections',
+            orderable: false,
+            searchable: false,
+            render: function (data) {
+                return renderSectionCounts(data, 'registered_students');
             },
         },
         /* teacher_display */

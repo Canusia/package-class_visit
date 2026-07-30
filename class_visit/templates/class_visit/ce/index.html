@@ -82,6 +82,13 @@
               <th data-data="visit_date" data-name="visit_date">Visit Date</th>
               <th data-data="type_of_visit" data-name="type_of_visit">Type</th>
               <th data-data="class_sections" data-name="class_sections">Section(s)</th>
+              {% comment %}
+              Both counts come off the nested section rows (annotated in
+              CEVisitScheduleViewSet), so neither is a sortable/searchable
+              top-level field.
+              {% endcomment %}
+              <th data-data="class_sections" searchable="0" data-name="class_sections"># Students</th>
+              <th data-data="class_sections" searchable="0" data-name="class_sections"># Registered</th>
               <th data-data="teacher_display" data-name="teacher_display">Instructor</th>
               <th data-data="visitors" data-name="visitors">Visitor(s)</th>
               <th data-data="report_status" data-name="report_status">Report Status</th>

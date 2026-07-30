@@ -2,6 +2,7 @@
 import logging
 
 from django.contrib.auth.decorators import login_required, user_passes_test
+from django.db.models import Count, Prefetch, Q
 from django.http import Http404, JsonResponse, HttpResponse
 from django.shortcuts import get_object_or_404, render
 from django.urls import reverse
@@ -42,7 +43,21 @@ class CEVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
 
     def get_queryset(self):
         qs = VisitSchedule.objects.all().distinct().prefetch_related(
-            'class_sections',
+            # ClassSectionSerializer exposes num_students / registered_students
+            # as read-only IntegerFields, populated only from these
+            # annotations. Same definitions the CE sections table uses
+            # (cis.views.section): num_students counts every registration,
+            # registered_students only status='registered'.
+            Prefetch(
+                'class_sections',
+                queryset=ClassSection.objects.annotate(
+                    num_students=Count('studentregistration'),
+                    registered_students=Count(
+                        'studentregistration',
+                        filter=Q(studentregistration__status='registered'),
+                    ),
+                ),
+            ),
             'class_sections__course',
             'class_sections__campus',
             'class_sections__highschool',
