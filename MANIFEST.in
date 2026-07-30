@@ -8,6 +8,7 @@ recursive-include class_visit/templates *
 recursive-include class_visit/management *
 recursive-include class_visit/migrations *
 recursive-include class_visit/settings *
+recursive-include class_visit/reports *
 recursive-include class_visit/services *
 recursive-include class_visit/serializers *
 recursive-include class_visit/staticfiles *
