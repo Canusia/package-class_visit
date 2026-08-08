@@ -4,6 +4,8 @@ from django.conf import settings
 from django.db import models
 from django.db.models import JSONField
 from django.urls import reverse_lazy
+from django.utils.html import format_html, format_html_join
+from django.utils.safestring import mark_safe
 
 from model_utils import FieldTracker
 
@@ -88,7 +90,7 @@ class VisitSchedule(models.Model):
     @property
     def visitors_sexy(self):
         visitors = self.visitor_names
-        return '<br>'.join(visitors)
+        return format_html_join(mark_safe('<br>'), '{}', ((v,) for v in visitors))
 
     @property
     def visitor_emails(self):
@@ -113,12 +115,14 @@ class VisitSchedule(models.Model):
     @property
     def instructor_sexy(self):
         sections = self.class_sections.all()
-        result = ''
 
         for section in sections:
-            result += f'<p>{section.teacher}<br>'
-            result += f'<span class="text-muted">{section.teacher.user.email}</span></p>'
-            return result
+            # Only the first section is described — sections always share a teacher.
+            return format_html(
+                '<p>{}<br><span class="text-muted">{}</span></p>',
+                section.teacher,
+                section.teacher.user.email,
+            )
 
     @property
     def teacher(self):
@@ -165,22 +169,26 @@ class VisitSchedule(models.Model):
     @property
     def highschool_sexy(self):
         sections = self.class_sections.all()
-        result = ''
 
         for section in sections:
-            result = f'<p>{section.highschool}</p>'
-            return result
+            # Only the first section is described — sections always share a high school.
+            return format_html('<p>{}</p>', section.highschool)
 
     @property
     def class_sections_sexy(self):
-        sections = self.class_sections.all()
-        result = ''
-
-        for section in sections:
-            result += f'<p>{section.course} ({section.class_number}/{section.section_number})<br>'
-            result += f'<span class="text-muted">{section.period_time}</span></p>'
-
-        return result
+        return format_html_join(
+            '',
+            '<p>{} ({}/{})<br><span class="text-muted">{}</span></p>',
+            (
+                (
+                    section.course,
+                    section.class_number,
+                    section.section_number,
+                    section.period_time,
+                )
+                for section in self.class_sections.all()
+            ),
+        )
 
     def courses(self):
         sections = self.class_sections.all()
@@ -432,12 +440,15 @@ class VisitReport(models.Model):
 
         if not files:
             return 'No files uploaded'
-        
+
         for file in files:
-            result.append("<a href='" + get_s3_url(file.file.name) + "' target='_blank'>" + file.file.name + "</a>")
+            result.append((get_s3_url(file.file.name), file.file.name))
 
-
-        return "<br>".join(result)
+        return format_html_join(
+            mark_safe('<br>'),
+            "<a href='{}' target='_blank'>{}</a>",
+            result,
+        )
     
     @property
     def payment_status_sexy(self):

@@ -9,6 +9,7 @@ import datetime
 from django.conf import settings
 from django.template.loader import render_to_string
 from django.template import Context, Template
+from django.utils.html import strip_tags
 
 from mailer import send_html_mail
 
@@ -57,9 +58,11 @@ def send_app_email(subject: str, message_text: str, recipients: list) -> None:
         if not to:
             return  # debug list is empty — suppress
 
+    # message_text carries markup (shortcodes like {{class_sections}} expand to HTML),
+    # so the text/plain alternative has to be stripped or text-only clients see tags.
     send_html_mail(
         subject,
-        message_text,
+        strip_tags(message_text),
         html_body,
         settings.DEFAULT_FROM_EMAIL,
         to,
