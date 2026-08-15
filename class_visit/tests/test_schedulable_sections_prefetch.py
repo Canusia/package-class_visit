@@ -17,9 +17,10 @@ from django.test import TestCase, RequestFactory
 from cis.models.term import AcademicYear, Term
 from cis.models.course import Cohort, Course, CourseAdministrator
 from cis.models.section import ClassSection
+from . import PKG
 
-from class_visit.class_visit.models import VisitSchedule
-from class_visit.class_visit.views.faculty import (
+from ..models import VisitSchedule
+from ..views.faculty import (
     FacultySchedulableSectionViewSet,
     FacultyVisitScheduleViewSet,
 )
@@ -32,7 +33,7 @@ def _sfx():
 
 
 class SchedulableSectionPrefetchTest(TestCase):
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
     def test_get_queryset_evaluates_without_syllabi_prefetch_error(self, MockSettings):
         MockSettings.from_db.return_value = {'section_status_filter': 'active'}
 

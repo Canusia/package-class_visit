@@ -7,13 +7,13 @@ from django.test import TestCase
 class FacultySchedulableSectionSerializerTest(TestCase):
 
     def test_import(self):
-        from class_visit.class_visit.serializers.faculty import (
+        from ..serializers.faculty import (
             FacultySchedulableSectionSerializer
         )
         self.assertTrue(callable(FacultySchedulableSectionSerializer))
 
     def test_meta_has_datatables_always_serialize(self):
-        from class_visit.class_visit.serializers.faculty import (
+        from ..serializers.faculty import (
             FacultySchedulableSectionSerializer
         )
         meta = FacultySchedulableSectionSerializer.Meta
@@ -26,13 +26,13 @@ class FacultySchedulableSectionSerializerTest(TestCase):
 class FacultyVisitScheduleSerializerTest(TestCase):
 
     def test_import(self):
-        from class_visit.class_visit.serializers.faculty import (
+        from ..serializers.faculty import (
             FacultyVisitScheduleSerializer
         )
         self.assertTrue(callable(FacultyVisitScheduleSerializer))
 
     def test_meta_has_datatables_always_serialize(self):
-        from class_visit.class_visit.serializers.faculty import (
+        from ..serializers.faculty import (
             FacultyVisitScheduleSerializer
         )
         meta = FacultyVisitScheduleSerializer.Meta
@@ -45,8 +45,8 @@ class FacultyVisitScheduleSerializerTest(TestCase):
             self.assertIn(required, always, f'{required} missing')
 
     def test_status_fields_reflect_report(self):
-        from class_visit.class_visit.models import VisitSchedule, VisitReport
-        from class_visit.class_visit.serializers.faculty import (
+        from ..models import VisitSchedule, VisitReport
+        from ..serializers.faculty import (
             FacultyVisitScheduleSerializer
         )
         vs = VisitSchedule.objects.create()
@@ -57,8 +57,8 @@ class FacultyVisitScheduleSerializerTest(TestCase):
         self.assertEqual(data['payment_status'], 'Pending')
 
     def test_status_fields_when_no_report(self):
-        from class_visit.class_visit.models import VisitSchedule
-        from class_visit.class_visit.serializers.faculty import (
+        from ..models import VisitSchedule
+        from ..serializers.faculty import (
             FacultyVisitScheduleSerializer
         )
         vs = VisitSchedule.objects.create()

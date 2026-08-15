@@ -21,8 +21,9 @@ from cis.models.course import Cohort, Course
 from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
+from . import PKG
 
-from class_visit.class_visit.models import VisitReport, VisitSchedule
+from ..models import VisitReport, VisitSchedule
 
 User = get_user_model()
 
@@ -151,7 +152,7 @@ class InstructorReportDetailsTest(TestCase):
         self.assertTrue(resp.context['can_download'])
         self.assertIn('Download as PDF', resp.content.decode())
 
-    @patch('class_visit.class_visit.views.instructor.visit_letter_pdf')
+    @patch(f'{PKG}.views.instructor.visit_letter_pdf')
     def test_pdf_download_returns_public_only_letter(self, mock_pdf):
         mock_pdf.return_value = b'%PDF-1.4 fake'
         report = self._submit_report()
@@ -169,7 +170,7 @@ class InstructorReportDetailsTest(TestCase):
             'instructor_class_visit:report_pdf', kwargs={'visit_id': self.visit.id}))
         self.assertEqual(resp.status_code, 404)
 
-    @patch('class_visit.class_visit.views.instructor.visit_letter_pdf')
+    @patch(f'{PKG}.views.instructor.visit_letter_pdf')
     def test_pdf_download_404s_for_another_instructors_visit(self, mock_pdf):
         mock_pdf.return_value = b'%PDF-1.4 fake'
         self._submit_report()

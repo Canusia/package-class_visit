@@ -6,6 +6,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import AnonymousUser, Group
 from django.contrib.auth.signals import user_logged_in
 from django.urls import reverse
+from . import PKG
 
 User = get_user_model()
 
@@ -35,14 +36,14 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
         request.user = user
         return request
 
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
-    @patch('class_visit.class_visit.views.faculty.NotNeededVisit')
-    @patch('class_visit.class_visit.views.faculty.ClassSection')
-    @patch('class_visit.class_visit.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.NotNeededVisit')
+    @patch(f'{PKG}.views.faculty.ClassSection')
+    @patch(f'{PKG}.views.faculty.CourseAdministrator')
     def test_active_filter_excludes_inactive(
         self, MockCA, MockCS, MockNNV, MockSettings
     ):
-        from class_visit.class_visit.views.faculty import FacultySchedulableSectionViewSet
+        from ..views.faculty import FacultySchedulableSectionViewSet
 
         MockSettings.from_db.return_value = {'section_status_filter': 'active'}
         MockCA.objects.filter.return_value.values_list.return_value = []
@@ -71,14 +72,14 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
         # If filter chained differently, just assert qs was returned
         # (the important thing is the view imported without error)
 
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
-    @patch('class_visit.class_visit.views.faculty.NotNeededVisit')
-    @patch('class_visit.class_visit.views.faculty.ClassSection')
-    @patch('class_visit.class_visit.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.NotNeededVisit')
+    @patch(f'{PKG}.views.faculty.ClassSection')
+    @patch(f'{PKG}.views.faculty.CourseAdministrator')
     def test_not_needed_excluded(
         self, MockCA, MockCS, MockNNV, MockSettings
     ):
-        from class_visit.class_visit.views.faculty import FacultySchedulableSectionViewSet
+        from ..views.faculty import FacultySchedulableSectionViewSet
 
         not_needed_id = uuid.uuid4()
         MockSettings.from_db.return_value = {'section_status_filter': 'all'}
@@ -108,10 +109,10 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
 class NotifyOnScheduleTest(TestCase):
     """Scheduling a visit fires notify_teacher_visit_scheduled when setting is Yes."""
 
-    @patch('class_visit.class_visit.views.faculty.get_object_or_404')
-    @patch('class_visit.class_visit.views.faculty.emails')
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
-    @patch('class_visit.class_visit.views.faculty.VisitScheduleForm')
+    @patch(f'{PKG}.views.faculty.get_object_or_404')
+    @patch(f'{PKG}.views.faculty.emails')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.VisitScheduleForm')
     def test_notify_called_when_setting_yes(
         self, MockForm, MockSettings, MockEmails, MockGetObj):
         MockSettings.from_db.return_value = {
@@ -131,7 +132,7 @@ class NotifyOnScheduleTest(TestCase):
         request = factory.post('/fake/', {'submit': 'save'})
         request.user = MagicMock()
 
-        from class_visit.class_visit.views.faculty import manage_visit
+        from ..views.faculty import manage_visit
         response = manage_visit(request, class_section_id=uuid.uuid4())
 
         # The form's save() is expected to handle the notify call (as per VisitScheduleForm.save)
@@ -142,10 +143,10 @@ class NotifyOnScheduleTest(TestCase):
 class ReportSubmitNotifyTest(TestCase):
     """Submitting a report flips status and triggers notifications."""
 
-    @patch('class_visit.class_visit.views.faculty.emails')
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
-    @patch('class_visit.class_visit.views.faculty.VisitReportDynamicForm')
-    @patch('class_visit.class_visit.views.faculty.VisitSchedule')
+    @patch(f'{PKG}.views.faculty.emails')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.VisitReportDynamicForm')
+    @patch(f'{PKG}.views.faculty.VisitSchedule')
     def test_submit_triggers_notifications(
         self, MockVS, MockForm, MockSettings, MockEmails
     ):
@@ -165,7 +166,7 @@ class ReportSubmitNotifyTest(TestCase):
         request = factory.post('/fake/', {'submit_action': 'submit'})
         request.user = MagicMock()
 
-        from class_visit.class_visit.views.faculty import edit_visit_report
+        from ..views.faculty import edit_visit_report
         response = edit_visit_report(request, visit_id=uuid.uuid4())
 
         mock_form_instance.save.assert_called_once()
@@ -174,9 +175,9 @@ class ReportSubmitNotifyTest(TestCase):
 class BulkPdfActionTest(TestCase):
     """do_bulk_action returns application/pdf for action=export_pdf (single combined PDF)."""
 
-    @patch('class_visit.class_visit.views.faculty.pdf_service')
-    @patch('class_visit.class_visit.views.faculty.VisitReport')
-    @patch('class_visit.class_visit.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.pdf_service')
+    @patch(f'{PKG}.views.faculty.VisitReport')
+    @patch(f'{PKG}.views.faculty.CourseAdministrator')
     def test_bulk_export_returns_pdf_content_type(self, MockCA, MockVR, MockPDF):
         # visit_letters_pdf is the shared helper — single call, returns bytes
         MockPDF.visit_letters_pdf.return_value = b'%PDF-1.4 fake'
@@ -200,7 +201,7 @@ class BulkPdfActionTest(TestCase):
         )
         request.user = MagicMock()
 
-        from class_visit.class_visit.views.faculty import do_bulk_action
+        from ..views.faculty import do_bulk_action
         response = do_bulk_action(request)
 
         self.assertEqual(response.status_code, 200)
@@ -208,9 +209,9 @@ class BulkPdfActionTest(TestCase):
         # Must use the combined helper, not the single-report function
         MockPDF.visit_letters_pdf.assert_called_once_with([mock_report], public_only=False)
 
-    @patch('class_visit.class_visit.views.faculty.pdf_service')
-    @patch('class_visit.class_visit.views.faculty.VisitReport')
-    @patch('class_visit.class_visit.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.pdf_service')
+    @patch(f'{PKG}.views.faculty.VisitReport')
+    @patch(f'{PKG}.views.faculty.CourseAdministrator')
     def test_bulk_export_excludes_unauthorized_report(self, MockCA, MockVR, MockPDF):
         """Faculty A cannot export a report whose course Faculty A does not administer."""
         MockPDF.visit_letters_pdf.return_value = b'%PDF-1.4 fake'
@@ -240,7 +241,7 @@ class BulkPdfActionTest(TestCase):
         )
         request.user = MagicMock()
 
-        from class_visit.class_visit.views.faculty import do_bulk_action
+        from ..views.faculty import do_bulk_action
         response = do_bulk_action(request)
 
         self.assertEqual(response.status_code, 200)
@@ -289,7 +290,7 @@ class ManageVisitDatepickerTest(TestCase):
     def tearDown(self):
         _reconnect_login_signal(self._saved_login_receivers)
 
-    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.forms.faculty.ClassVisitSettings')
     def test_manage_visit_page_includes_datepicker_init(self, MockSettings):
         MockSettings.from_db.return_value = {
             'section_status_filter': 'active', 'visit_types': 'Observation'}

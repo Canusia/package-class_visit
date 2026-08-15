@@ -12,6 +12,7 @@ from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.signals import user_logged_in
 from django.urls import reverse
+from . import PKG
 
 User = get_user_model()
 
@@ -48,10 +49,10 @@ class VisitScheduleQuerysetTest(TestCase):
         request.user = user
         return request
 
-    @patch('class_visit.class_visit.views.instructor.VisitSchedule')
+    @patch(f'{PKG}.views.instructor.VisitSchedule')
     def test_instructor_sees_only_own_sections(self, MockVS):
         """get_queryset filters by the logged-in teacher."""
-        from class_visit.class_visit.views.instructor import InstructorVisitScheduleViewSet
+        from ..views.instructor import InstructorVisitScheduleViewSet
 
         teacher = MagicMock()
         user = MagicMock()
@@ -75,10 +76,10 @@ class VisitScheduleQuerysetTest(TestCase):
         MockVS.objects.filter.assert_called_once_with(class_sections__teacher=teacher)
         self.assertEqual(result, qs)
 
-    @patch('class_visit.class_visit.views.instructor.VisitSchedule')
+    @patch(f'{PKG}.views.instructor.VisitSchedule')
     def test_no_teacher_returns_empty_queryset(self, MockVS):
         """User without a teacher profile gets an empty queryset."""
-        from class_visit.class_visit.views.instructor import InstructorVisitScheduleViewSet
+        from ..views.instructor import InstructorVisitScheduleViewSet
 
         user = MagicMock()
         # Simulate no teacher via AttributeError on .teacher access
@@ -93,7 +94,7 @@ class VisitScheduleQuerysetTest(TestCase):
         vs.kwargs = {}
 
         # Patch _get_teacher_or_none to return None (simulates AttributeError path)
-        with patch('class_visit.class_visit.views.instructor._get_teacher_or_none',
+        with patch(f'{PKG}.views.instructor._get_teacher_or_none',
                    return_value=None):
             result = vs.get_queryset()
 
@@ -146,7 +147,7 @@ class PublicReportDetailTest(TestCase):
         Patches _get_teacher_or_none, VisitSchedule, and get_object_or_404.
         """
         from django.test import RequestFactory
-        from class_visit.class_visit.views.instructor import report_detail as view_fn
+        from ..views.instructor import report_detail as view_fn
 
         factory = RequestFactory()
         request = factory.get(f'/instructor/class_visits/report/{visit_id}/')
@@ -164,13 +165,13 @@ class PublicReportDetailTest(TestCase):
         mock_vs.objects.filter.return_value = mock_qs
         mock_qs.distinct.return_value = mock_qs
 
-        with patch('class_visit.class_visit.views.instructor._get_teacher_or_none',
+        with patch(f'{PKG}.views.instructor._get_teacher_or_none',
                    return_value=teacher), \
-             patch('class_visit.class_visit.views.instructor.VisitSchedule', mock_vs), \
-             patch('class_visit.class_visit.views.instructor.get_object_or_404',
+             patch(f'{PKG}.views.instructor.VisitSchedule', mock_vs), \
+             patch(f'{PKG}.views.instructor.get_object_or_404',
                    return_value=mock_visit), \
-             patch('class_visit.class_visit.views.instructor.draw_menu', return_value=''), \
-             patch('class_visit.class_visit.views.instructor.rf_service') as mock_rf:
+             patch(f'{PKG}.views.instructor.draw_menu', return_value=''), \
+             patch(f'{PKG}.views.instructor.rf_service') as mock_rf:
 
             if public_values is not None:
                 mock_rf.report_values_for_display.return_value = public_values
@@ -227,7 +228,7 @@ class PublicReportDetailTest(TestCase):
         """An instructor whose sections don't include this visit gets 404."""
         from django.http import Http404
         from django.test import RequestFactory
-        from class_visit.class_visit.views.instructor import report_detail as view_fn
+        from ..views.instructor import report_detail as view_fn
 
         factory = RequestFactory()
         visit_id = uuid.uuid4()
@@ -240,12 +241,12 @@ class PublicReportDetailTest(TestCase):
         mock_vs.objects.filter.return_value = mock_qs
         mock_qs.distinct.return_value = mock_qs
 
-        with patch('class_visit.class_visit.views.instructor._get_teacher_or_none',
+        with patch(f'{PKG}.views.instructor._get_teacher_or_none',
                    return_value=teacher), \
-             patch('class_visit.class_visit.views.instructor.VisitSchedule', mock_vs), \
-             patch('class_visit.class_visit.views.instructor.get_object_or_404',
+             patch(f'{PKG}.views.instructor.VisitSchedule', mock_vs), \
+             patch(f'{PKG}.views.instructor.get_object_or_404',
                    side_effect=Http404), \
-             patch('class_visit.class_visit.views.instructor.draw_menu', return_value=''):
+             patch(f'{PKG}.views.instructor.draw_menu', return_value=''):
 
             with self.assertRaises(Http404):
                 view_fn(request, visit_id=visit_id)
@@ -258,9 +259,9 @@ class PublicReportDetailTest(TestCase):
 class ConfirmVisitTest(TestCase):
     """confirm_visit_view: token auth, idempotent, graceful bad token."""
 
-    PATCH_PATH = 'class_visit.class_visit.views.instructor.svc_confirm_import'
+    PATCH_PATH = f'{PKG}.views.instructor.svc_confirm_import'
 
-    PATCH_SVC = 'class_visit.class_visit.views.instructor.svc_confirm'
+    PATCH_SVC = f'{PKG}.views.instructor.svc_confirm'
 
     def test_valid_token_sets_confirmed_on(self):
         """Valid token → confirm_visit service called, shows success page."""
@@ -356,9 +357,9 @@ class BulkExportPDFTest(TestCase):
             data={'action': action, 'ids[]': ids},
         )
 
-    @patch('class_visit.class_visit.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
-    @patch('class_visit.class_visit.views.instructor._get_teacher_or_none')
-    @patch('class_visit.class_visit.views.instructor.VisitSchedule')
+    @patch(f'{PKG}.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
+    @patch(f'{PKG}.views.instructor._get_teacher_or_none')
+    @patch(f'{PKG}.views.instructor.VisitSchedule')
     def test_bulk_pdf_returns_pdf_content_type(self, MockVS, mock_get_teacher, mock_pdf):
         """POST export_pdf → 200 application/pdf, visit_letters_pdf called with public_only=True."""
         teacher = MagicMock()
@@ -388,9 +389,9 @@ class BulkExportPDFTest(TestCase):
             'visit_letters_pdf must be called with public_only=True',
         )
 
-    @patch('class_visit.class_visit.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
-    @patch('class_visit.class_visit.views.instructor._get_teacher_or_none')
-    @patch('class_visit.class_visit.views.instructor.VisitSchedule')
+    @patch(f'{PKG}.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
+    @patch(f'{PKG}.views.instructor._get_teacher_or_none')
+    @patch(f'{PKG}.views.instructor.VisitSchedule')
     def test_bulk_pdf_skips_non_submitted(self, MockVS, mock_get_teacher, mock_pdf):
         """A visit with no submitted report is skipped; still returns 200 PDF (fallback page)."""
         teacher = MagicMock()
@@ -409,8 +410,8 @@ class BulkExportPDFTest(TestCase):
         qs.__iter__ = MagicMock(return_value=iter([visit]))
 
         visit_id = str(uuid.uuid4())
-        with patch('class_visit.class_visit.views.instructor.pdfkit') as mock_pdfkit, \
-             patch('class_visit.class_visit.views.instructor.get_template') as mock_gt:
+        with patch(f'{PKG}.views.instructor.pdfkit') as mock_pdfkit, \
+             patch(f'{PKG}.views.instructor.get_template') as mock_gt:
             mock_pdfkit.from_string.return_value = b'%PDF-fallback'
             mock_gt.return_value.render.return_value = '<html>fallback</html>'
             resp = self._post_bulk(self.instructor_user, [visit_id])
@@ -419,9 +420,9 @@ class BulkExportPDFTest(TestCase):
         # visit_letters_pdf should NOT be called because submitted_reports is empty
         mock_pdf.assert_not_called()
 
-    @patch('class_visit.class_visit.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
-    @patch('class_visit.class_visit.views.instructor._get_teacher_or_none')
-    @patch('class_visit.class_visit.views.instructor.VisitSchedule')
+    @patch(f'{PKG}.views.instructor.visit_letters_pdf', return_value=b'%PDF-fake')
+    @patch(f'{PKG}.views.instructor._get_teacher_or_none')
+    @patch(f'{PKG}.views.instructor.VisitSchedule')
     def test_bulk_pdf_unauthorized_visit_excluded(self, MockVS, mock_get_teacher, mock_pdf):
         """IDs belonging to another instructor's visits are silently dropped by queryset scope."""
         teacher = MagicMock()

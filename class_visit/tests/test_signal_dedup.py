@@ -20,6 +20,7 @@ import uuid
 from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
+from . import PKG
 
 
 # ---------------------------------------------------------------------------
@@ -52,14 +53,14 @@ class SignalEmailCallsRemovedTest(TestCase):
 
     def test_visit_schedule_post_save_does_not_raise_on_email_instructor(self):
         """Saving a VisitSchedule with email_instructor notification completes cleanly."""
-        from class_visit.class_visit.models import VisitSchedule
+        from ..models import VisitSchedule
 
         # Use a plain MagicMock (no spec) — legacy methods no longer exist on the class.
         visit = MagicMock()
         visit.meta = {'visit_notifications': ['email_instructor']}
         visit.pk = uuid.uuid4()
 
-        import class_visit.class_visit.signals  # noqa — ensures handler is registered
+        from .. import signals  # noqa — ensures handler is registered
 
         from django.db.models.signals import post_save
         # Should not raise AttributeError from calling removed notify_instructor
@@ -67,41 +68,41 @@ class SignalEmailCallsRemovedTest(TestCase):
 
     def test_visit_schedule_post_save_does_not_raise_on_email_visitors(self):
         """Saving a VisitSchedule with email_visitors notification completes cleanly."""
-        from class_visit.class_visit.models import VisitSchedule
+        from ..models import VisitSchedule
 
         visit = MagicMock()
         visit.meta = {'visit_notifications': ['email_visitors']}
         visit.pk = uuid.uuid4()
 
-        import class_visit.class_visit.signals  # noqa
+        from .. import signals  # noqa
 
         from django.db.models.signals import post_save
         post_save.send(sender=VisitSchedule, instance=visit, created=True)
 
     def test_visit_report_post_save_does_not_raise_on_submit(self):
         """Saving a submitted VisitReport completes cleanly without legacy email calls."""
-        from class_visit.class_visit.models import VisitReport
+        from ..models import VisitReport
 
         report = MagicMock()
         report.is_submitted = True
         report.meta = {}
         report.pk = uuid.uuid4()
 
-        import class_visit.class_visit.signals  # noqa
+        from .. import signals  # noqa
 
         from django.db.models.signals import post_save
         post_save.send(sender=VisitReport, instance=report, created=False)
 
     def test_visit_report_post_save_does_not_raise_on_notify_course_admin(self):
         """Saving a submitted VisitReport completes cleanly (no notify_course_administrator)."""
-        from class_visit.class_visit.models import VisitReport
+        from ..models import VisitReport
 
         report = MagicMock()
         report.is_submitted = True
         report.meta = {}
         report.pk = uuid.uuid4()
 
-        import class_visit.class_visit.signals  # noqa
+        from .. import signals  # noqa
 
         from django.db.models.signals import post_save
         post_save.send(sender=VisitReport, instance=report, created=False)
@@ -117,7 +118,7 @@ def _faculty_form_save_with_mocks(settings_dict, is_new=True):
 
     Returns (mock_visit, mock_notify_fn) so callers can assert on call counts.
     """
-    from class_visit.class_visit.forms.faculty import VisitScheduleForm
+    from ..forms.faculty import VisitScheduleForm
 
     section = _make_section()
     visitor_id = uuid.uuid4()
@@ -135,19 +136,19 @@ def _faculty_form_save_with_mocks(settings_dict, is_new=True):
     mock_notify = MagicMock()
 
     with patch(
-        'class_visit.class_visit.forms.faculty.ClassVisitSettings'
+        f'{PKG}.forms.faculty.ClassVisitSettings'
     ) as MockSettings, patch(
-        'class_visit.class_visit.forms.faculty.VisitSchedule'
+        f'{PKG}.forms.faculty.VisitSchedule'
     ) as MockVS, patch(
-        'class_visit.class_visit.forms.faculty.ClassSection'
+        f'{PKG}.forms.faculty.ClassSection'
     ) as MockCS, patch(
-        'class_visit.class_visit.forms.faculty.CustomUser'
+        f'{PKG}.forms.faculty.CustomUser'
     ) as MockUser, patch(
-        'class_visit.class_visit.forms.faculty.CourseAdministrator'
+        f'{PKG}.forms.faculty.CourseAdministrator'
     ) as MockCA, patch(
-        'class_visit.class_visit.forms.faculty.NotNeededVisit'
+        f'{PKG}.forms.faculty.NotNeededVisit'
     ) as MockNNV, patch(
-        'class_visit.class_visit.services.emails.notify_teacher_visit_scheduled',
+        f'{PKG}.services.emails.notify_teacher_visit_scheduled',
         mock_notify,
     ):
         MockSettings.from_db.return_value = settings_dict
@@ -223,7 +224,7 @@ def _ce_form_save_with_mocks(visit_id_val, settings_dict, existing_visit=None):
     Call CEVisitScheduleForm.save() with the ORM fully mocked.
     Returns (mock_visit, mock_notify_fn).
     """
-    from class_visit.class_visit.forms.ce import CEVisitScheduleForm
+    from ..forms.ce import CEVisitScheduleForm
 
     section = _make_section()
     visitor_id = uuid.uuid4()
@@ -238,15 +239,15 @@ def _ce_form_save_with_mocks(visit_id_val, settings_dict, existing_visit=None):
     mock_notify = MagicMock()
 
     with patch(
-        'class_visit.class_visit.forms.ce.VisitSchedule'
+        f'{PKG}.forms.ce.VisitSchedule'
     ) as MockVS, patch(
-        'class_visit.class_visit.forms.ce.ClassSection'
+        f'{PKG}.forms.ce.ClassSection'
     ) as MockCS, patch(
-        'class_visit.class_visit.forms.ce.CustomUser'
+        f'{PKG}.forms.ce.CustomUser'
     ) as MockUser, patch(
-        'class_visit.class_visit.forms.ce.ClassVisitSettings'
+        f'{PKG}.forms.ce.ClassVisitSettings'
     ) as MockSettings, patch(
-        'class_visit.class_visit.services.emails.notify_teacher_visit_scheduled',
+        f'{PKG}.services.emails.notify_teacher_visit_scheduled',
         mock_notify,
     ):
         MockVS.return_value = mock_visit
@@ -304,7 +305,7 @@ class FacultyReportFormNotifyOnceTest(TestCase):
 
     def test_new_service_called_once_on_report_submit(self):
         """notify_teacher_report_submitted + notify_notification_target each called once."""
-        from class_visit.class_visit.forms.faculty import VisitReportDynamicForm
+        from ..forms.faculty import VisitReportDynamicForm
 
         mock_visit = MagicMock()
         mock_visit.pk = uuid.uuid4()
@@ -320,17 +321,17 @@ class FacultyReportFormNotifyOnceTest(TestCase):
         mock_notify_target = MagicMock()
 
         with patch(
-            'class_visit.class_visit.forms.faculty.report_fields'
+            f'{PKG}.forms.faculty.report_fields'
         ) as mock_rf, patch(
-            'class_visit.class_visit.forms.faculty.VisitReport'
+            f'{PKG}.forms.faculty.VisitReport'
         ) as MockVR, patch(
-            'class_visit.class_visit.services.emails.notify_teacher_report_submitted',
+            f'{PKG}.services.emails.notify_teacher_report_submitted',
             mock_notify_teacher,
         ), patch(
-            'class_visit.class_visit.services.emails.notify_notification_target',
+            f'{PKG}.services.emails.notify_notification_target',
             mock_notify_target,
         ), patch(
-            'class_visit.class_visit.settings.class_visit.class_visit.from_db',
+            f'{PKG}.settings.class_visit.class_visit.from_db',
             return_value={'notify_teacher_on_submit': 'Yes'},
         ):
             mock_rf.build_report_form_fields.return_value = {}

@@ -7,8 +7,9 @@ import datetime
 from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
+from . import PKG
 
-from class_visit.class_visit.models import _should_remind, VisitSchedule
+from ..models import _should_remind, VisitSchedule
 
 
 # ---------------------------------------------------------------------------
@@ -97,8 +98,8 @@ class ShouldRemindHelperTests(TestCase):
 class SendPendingReportRemindersTests(TestCase):
     """Integration-style tests for VisitSchedule.send_pending_report_reminders()."""
 
-    SETTINGS_PATH = 'class_visit.class_visit.models._get_cv_settings'
-    EMAIL_PATH = 'class_visit.class_visit.models._remind_visitor_report_pending'
+    SETTINGS_PATH = f'{PKG}.models._get_cv_settings'
+    EMAIL_PATH = f'{PKG}.models._remind_visitor_report_pending'
 
     def _patch_settings(self, is_active='Yes', reminder_every_days=7):
         return patch(self.SETTINGS_PATH, return_value={

@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
 
-from class_visit.class_visit.reports.scheduled_visits import scheduled_visits
+from ..reports.scheduled_visits import scheduled_visits
 
 
 class ScheduledVisitsReportTest(TestCase):

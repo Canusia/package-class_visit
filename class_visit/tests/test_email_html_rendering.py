@@ -13,6 +13,7 @@ from unittest.mock import MagicMock, PropertyMock, patch
 
 from django.test import TestCase
 from django.utils.safestring import SafeString
+from . import PKG
 
 from ..models import VisitReport, VisitSchedule
 
@@ -153,7 +154,7 @@ class EmailBodyRenderingTest(TestCase):
         cfg = dict(self.CFG)
         cfg.update(overrides or {})
         return patch(
-            'class_visit.class_visit.services.emails._get_settings',
+            f'{PKG}.services.emails._get_settings',
             return_value=cfg,
         )
 
@@ -169,8 +170,8 @@ class EmailBodyRenderingTest(TestCase):
         vs.meta = {}
         return vs
 
-    @patch('class_visit.class_visit.models.VisitSchedule.objects')
-    @patch('class_visit.class_visit.services.emails.send_html_mail')
+    @patch(f'{PKG}.models.VisitSchedule.objects')
+    @patch(f'{PKG}.services.emails.send_html_mail')
     def test_reminder_body_keeps_section_markup(self, mock_send, _mock_objects):
         from django.utils.safestring import mark_safe
 
@@ -186,8 +187,8 @@ class EmailBodyRenderingTest(TestCase):
         self.assertIn('<p>ACC 101</p>', html_body)
         self.assertNotIn('&lt;p&gt;ACC 101', html_body)
 
-    @patch('class_visit.class_visit.models.VisitSchedule.objects')
-    @patch('class_visit.class_visit.services.emails.send_html_mail')
+    @patch(f'{PKG}.models.VisitSchedule.objects')
+    @patch(f'{PKG}.services.emails.send_html_mail')
     def test_plain_text_alternative_is_stripped_of_markup(self, mock_send, _mock_objects):
         from django.utils.safestring import mark_safe
 
@@ -202,8 +203,8 @@ class EmailBodyRenderingTest(TestCase):
         self.assertIn('ACC 101', text_body)
         self.assertNotIn('<p>', text_body)
 
-    @patch('class_visit.class_visit.models.VisitSchedule.objects')
-    @patch('class_visit.class_visit.services.emails.send_html_mail')
+    @patch(f'{PKG}.models.VisitSchedule.objects')
+    @patch(f'{PKG}.services.emails.send_html_mail')
     def test_plain_context_values_are_still_escaped(self, mock_send, _mock_objects):
         """mark_safe must not leak to genuinely plain-text shortcodes."""
         from django.utils.safestring import mark_safe

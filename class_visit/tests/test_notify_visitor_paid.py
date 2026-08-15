@@ -1,8 +1,9 @@
 from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
+from . import PKG
 
-from class_visit.class_visit.services import emails
+from ..services import emails
 
 
 def _report(first='Ann', email='ann@x.com'):
@@ -18,8 +19,8 @@ def _report(first='Ann', email='ann@x.com'):
 
 class NotifyVisitorPaidTests(TestCase):
 
-    @patch('class_visit.class_visit.services.emails.send_app_email')
-    @patch('class_visit.class_visit.services.emails._get_settings')
+    @patch(f'{PKG}.services.emails.send_app_email')
+    @patch(f'{PKG}.services.emails._get_settings')
     def test_sends_when_enabled_and_renders_shortcodes(self, mock_settings, mock_send):
         mock_settings.return_value = {
             'payment_tracking': 'Yes',
@@ -34,15 +35,15 @@ class NotifyVisitorPaidTests(TestCase):
         self.assertIn('Hi Ann for CHEM 101', message)   # shortcodes rendered
         self.assertEqual(recipients, ['ann@x.com'])
 
-    @patch('class_visit.class_visit.services.emails.send_app_email')
-    @patch('class_visit.class_visit.services.emails._get_settings')
+    @patch(f'{PKG}.services.emails.send_app_email')
+    @patch(f'{PKG}.services.emails._get_settings')
     def test_skips_when_notify_off(self, mock_settings, mock_send):
         mock_settings.return_value = {'payment_tracking': 'Yes', 'notify_visitor_on_paid': 'No'}
         emails.notify_visitor_payment_processed(_report())
         mock_send.assert_not_called()
 
-    @patch('class_visit.class_visit.services.emails.send_app_email')
-    @patch('class_visit.class_visit.services.emails._get_settings')
+    @patch(f'{PKG}.services.emails.send_app_email')
+    @patch(f'{PKG}.services.emails._get_settings')
     def test_skips_when_payment_tracking_off(self, mock_settings, mock_send):
         mock_settings.return_value = {'payment_tracking': 'No', 'notify_visitor_on_paid': 'Yes'}
         emails.notify_visitor_payment_processed(_report())

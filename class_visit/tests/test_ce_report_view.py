@@ -17,8 +17,9 @@ from cis.models.course import Cohort, Course
 from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
+from . import PKG
 
-from class_visit.class_visit.models import VisitReport, VisitSchedule
+from ..models import VisitReport, VisitSchedule
 
 User = get_user_model()
 
@@ -108,7 +109,7 @@ class CEViewReportTest(TestCase):
             self.assertIn('Download as PDF', html, suffix)
             self.assertIn(self.pdf_url, html, suffix)
 
-    @patch('class_visit.class_visit.views.ce.pdf_service')
+    @patch(f'{PKG}.views.ce.pdf_service')
     def test_pdf_download_includes_all_fields(self, mock_pdf):
         """CE gets public_only=False — the instructor download is the public one."""
         mock_pdf.visit_letter_pdf.return_value = b'%PDF-1.4 fake'
@@ -119,7 +120,7 @@ class CEViewReportTest(TestCase):
         mock_pdf.visit_letter_pdf.assert_called_once_with(report, public_only=False)
         self.assertNotIn('/', resp['Content-Disposition'].split('filename=')[1])
 
-    @patch('class_visit.class_visit.views.ce.pdf_service')
+    @patch(f'{PKG}.views.ce.pdf_service')
     def test_draft_report_is_downloadable(self, mock_pdf):
         mock_pdf.visit_letter_pdf.return_value = b'%PDF-1.4 fake'
         self._report(status='Draft')

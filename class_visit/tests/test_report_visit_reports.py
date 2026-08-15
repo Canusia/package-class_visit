@@ -3,8 +3,9 @@ import datetime
 from unittest.mock import MagicMock, patch
 
 from django.test import TestCase
+from . import PKG
 
-from class_visit.class_visit.reports.visit_reports import visit_reports
+from ..reports.visit_reports import visit_reports
 
 
 # Use 'name' as the key field — matches the real get_report_field_defs() shape
@@ -32,7 +33,7 @@ class VisitReportsReportTest(TestCase):
         return report
 
     @patch(
-        'class_visit.class_visit.reports.visit_reports.get_report_field_defs',
+        f'{PKG}.reports.visit_reports.get_report_field_defs',
         return_value=MOCK_FIELD_DEFS,
     )
     def test_headers_include_configured_fields(self, mock_defs):
@@ -43,7 +44,7 @@ class VisitReportsReportTest(TestCase):
         self.assertIn('Visit Date', headers)
 
     @patch(
-        'class_visit.class_visit.reports.visit_reports.get_report_field_defs',
+        f'{PKG}.reports.visit_reports.get_report_field_defs',
         return_value=MOCK_FIELD_DEFS,
     )
     def test_row_extracts_field_values(self, mock_defs):
@@ -54,7 +55,7 @@ class VisitReportsReportTest(TestCase):
         self.assertIn('Good class', row)
 
     @patch(
-        'class_visit.class_visit.reports.visit_reports.get_report_field_defs',
+        f'{PKG}.reports.visit_reports.get_report_field_defs',
         return_value=MOCK_FIELD_DEFS,
     )
     def test_only_submitted_reports_included(self, mock_defs):

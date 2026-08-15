@@ -4,7 +4,7 @@ from unittest.mock import MagicMock, patch, PropertyMock
 
 from django.test import TestCase
 
-from class_visit.class_visit.reports.pending_visit_reports import pending_visit_reports
+from ..reports.pending_visit_reports import pending_visit_reports
 
 
 class PendingVisitReportsReportTest(TestCase):

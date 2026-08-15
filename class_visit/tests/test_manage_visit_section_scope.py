@@ -15,8 +15,9 @@ from cis.models.term import AcademicYear, Term
 from cis.models.course import Cohort, Course, CourseAdministrator
 from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
+from . import PKG
 
-from class_visit.class_visit.forms.faculty import VisitScheduleForm
+from ..forms.faculty import VisitScheduleForm
 
 User = get_user_model()
 
@@ -65,7 +66,7 @@ class ManageVisitSectionScopeTest(TestCase):
     def _choice_ids(self, form):
         return {c[0] for c in form.fields['class_sections'].choices}
 
-    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.forms.faculty.ClassVisitSettings')
     def test_anchor_limits_to_same_course_and_instructor(self, MockSettings):
         MockSettings.from_db.return_value = {
             'section_status_filter': 'active', 'visit_types': 'Observation'}
@@ -78,7 +79,7 @@ class ManageVisitSectionScopeTest(TestCase):
         # new visit pre-selects the section it was launched from
         self.assertEqual(form.fields['class_sections'].initial, [str(self.sec_a1.id)])
 
-    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.forms.faculty.ClassVisitSettings')
     def test_template_renders_form_with_crispy(self, MockSettings):
         from django.template.loader import render_to_string
         MockSettings.from_db.return_value = {
@@ -92,7 +93,7 @@ class ManageVisitSectionScopeTest(TestCase):
         self.assertIn('form-group', html)              # crispy bootstrap4 wrapper
         self.assertIn('name="class_sections"', html)
 
-    @patch('class_visit.class_visit.forms.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.forms.faculty.ClassVisitSettings')
     def test_without_anchor_all_overseen_sections_offered(self, MockSettings):
         MockSettings.from_db.return_value = {
             'section_status_filter': 'active', 'visit_types': 'Observation'}
@@ -108,9 +109,9 @@ class ManageVisitSectionScopeTest(TestCase):
 class ReportTemplateRenderTest(SimpleTestCase):
     """The add/edit report form renders with crispy + the app CSS (no DB)."""
 
-    @patch('class_visit.class_visit.forms.faculty.report_fields.build_report_form_fields')
+    @patch(f'{PKG}.forms.faculty.report_fields.build_report_form_fields')
     def test_report_template_renders_with_crispy(self, mock_build):
-        from class_visit.class_visit.forms.faculty import VisitReportDynamicForm
+        from ..forms.faculty import VisitReportDynamicForm
         mock_build.return_value = {
             'summary': djforms.CharField(label='Summary', widget=djforms.Textarea),
         }

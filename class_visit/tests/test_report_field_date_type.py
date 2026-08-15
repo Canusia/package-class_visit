@@ -22,8 +22,8 @@ from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
 
-from class_visit.class_visit.models import VisitReport, VisitSchedule
-from class_visit.class_visit.services import report_fields as rf
+from ..models import VisitReport, VisitSchedule
+from ..services import report_fields as rf
 
 User = get_user_model()
 
@@ -82,7 +82,7 @@ class DateReportFieldSaveTest(TestCase):
             return_value={'report_fields_json': json.dumps(FIELD_DEFS)})
 
     def test_form_with_a_date_field_saves(self):
-        from class_visit.class_visit.forms.faculty import VisitReportDynamicForm
+        from ..forms.faculty import VisitReportDynamicForm
 
         with self._patched_settings():
             form = VisitReportDynamicForm(

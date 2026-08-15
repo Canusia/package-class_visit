@@ -24,8 +24,8 @@ from cis.models.student import Student
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
 
-from class_visit.class_visit.models import VisitSchedule
-from class_visit.class_visit.views.ce import CEVisitScheduleViewSet
+from ..models import VisitSchedule
+from ..views.ce import CEVisitScheduleViewSet
 
 User = get_user_model()
 
@@ -93,7 +93,7 @@ class CEVisitStudentCountsTest(TestCase):
         request.user = self.staff
         viewset = CEVisitScheduleViewSet()
         viewset.request = request
-        from class_visit.class_visit.serializers.ce import CEVisitScheduleSerializer
+        from ..serializers.ce import CEVisitScheduleSerializer
         visit = viewset.get_queryset().get(pk=self.visit.id)
         return CEVisitScheduleSerializer(visit).data['class_sections'][0]
 

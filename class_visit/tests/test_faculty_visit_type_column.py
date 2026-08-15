@@ -23,9 +23,10 @@ from cis.models.course import Cohort, Course, CourseAdministrator
 from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
+from . import PKG
 
-from class_visit.class_visit.models import VisitSchedule
-from class_visit.class_visit.serializers.faculty import (
+from ..models import VisitSchedule
+from ..serializers.faculty import (
     FacultyVisitScheduleSerializer,
     _MinimalVisitScheduleSerializer,
 )
@@ -145,7 +146,7 @@ class FacultyVisitTypeColumnTest(TestCase):
         data = _MinimalVisitScheduleSerializer(self.visit).data
         self.assertEqual(data['type_of_visit'], 'Virtual Observation')
 
-    @patch('class_visit.class_visit.views.faculty.ClassVisitSettings')
+    @patch(f'{PKG}.views.faculty.ClassVisitSettings')
     def test_schedule_visit_api_nests_the_type(self, MockSettings):
         MockSettings.from_db.return_value = {'section_status_filter': 'active'}
         resp = self.client.get(

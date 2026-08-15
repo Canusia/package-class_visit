@@ -3,8 +3,9 @@ import datetime
 from unittest.mock import MagicMock, patch, call
 
 from django.test import TestCase
+from . import PKG
 
-from class_visit.class_visit.reports.unscheduled_classes import unscheduled_classes
+from ..reports.unscheduled_classes import unscheduled_classes
 
 
 class UnscheduledClassesReportTest(TestCase):
@@ -67,8 +68,8 @@ class UnscheduledClassesStatusMappingTest(TestCase):
         models_module.NotNeededVisit = mock_nnv
 
         with patch.dict('sys.modules', {
-            'class_visit.class_visit.models': models_module,
-            'class_visit.class_visit.settings.class_visit': mock_settings_module,
+            f'{PKG}.models': models_module,
+            f'{PKG}.settings.class_visit': mock_settings_module,
             'cis.models.section': MagicMock(**{'ClassSection': mock_cs}),
         }):
             form._get_queryset(data)

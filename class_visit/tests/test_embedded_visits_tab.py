@@ -21,8 +21,8 @@ from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
 
-from class_visit.class_visit.models import VisitSchedule
-from class_visit.class_visit.views.ce import CEVisitScheduleViewSet
+from ..models import VisitSchedule
+from ..views.ce import CEVisitScheduleViewSet
 
 User = get_user_model()
 

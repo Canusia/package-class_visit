@@ -1,4 +1,4 @@
-"""Tests for class_visit.class_visit.forms.faculty.
+"""Tests for the class_visit forms.faculty module.
 
 The VisitScheduleFormValidationTest suite uses a real test database so that
 ClassSection.objects.filter(...).select_related(...) executes against actual
@@ -17,8 +17,9 @@ from cis.models.course import Cohort, Course, CourseAdministrator
 from cis.models.highschool import HighSchool
 from cis.models.teacher import Teacher
 from cis.models.section import ClassSection
+from . import PKG
 
-from class_visit.class_visit.forms.faculty import VisitScheduleForm, VisitReportDynamicForm
+from ..forms.faculty import VisitScheduleForm, VisitReportDynamicForm
 
 User = get_user_model()
 
@@ -151,7 +152,7 @@ class VisitScheduleFormValidationTest(TestCase):
         error.  The visitor field is handled the same way.
         """
         with patch(
-            "class_visit.class_visit.forms.faculty.ClassVisitSettings"
+            f"{PKG}.forms.faculty.ClassVisitSettings"
         ) as mock_settings:
             mock_settings.from_db.return_value = _SETTINGS
             form = VisitScheduleForm(
@@ -200,7 +201,7 @@ class VisitScheduleFormValidationTest(TestCase):
             status="A",
         )
         with patch(
-            "class_visit.class_visit.forms.faculty.ClassVisitSettings"
+            f"{PKG}.forms.faculty.ClassVisitSettings"
         ) as mock_settings:
             mock_settings.from_db.return_value = _SETTINGS
             form = VisitScheduleForm(
@@ -241,7 +242,7 @@ class VisitScheduleFormValidationTest(TestCase):
 
     def test_not_needed_section_rejected(self):
         """A section with a NotNeededVisit row must be rejected."""
-        from class_visit.class_visit.models import NotNeededVisit
+        from ..models import NotNeededVisit
 
         graph = _make_graph("nn1")
         sec = graph["section"]
@@ -275,7 +276,7 @@ class VisitScheduleFormValidationTest(TestCase):
         )
 
         with patch(
-            "class_visit.class_visit.forms.faculty.ClassVisitSettings"
+            f"{PKG}.forms.faculty.ClassVisitSettings"
         ) as mock_settings:
             mock_settings.from_db.return_value = _SETTINGS
             form = VisitScheduleForm(faculty_user=faculty_user)
@@ -315,7 +316,7 @@ class VisitScheduleFormValidationTest(TestCase):
 
 class VisitReportDynamicFormTest(TestCase):
 
-    @patch("class_visit.class_visit.forms.faculty.report_fields")
+    @patch(f"{PKG}.forms.faculty.report_fields")
     def test_form_builds_fields_from_service(self, mock_rf):
         mock_rf.build_report_form_fields.return_value = {}
         visit = MagicMock()
@@ -324,7 +325,7 @@ class VisitReportDynamicFormTest(TestCase):
             initial=None, type_of_visit=visit.type_of_visit
         )
 
-    @patch("class_visit.class_visit.forms.faculty.report_fields")
+    @patch(f"{PKG}.forms.faculty.report_fields")
     def test_form_builds_fields_with_existing_meta(self, mock_rf):
         existing_meta = {"field_a": "value"}
         mock_rf.build_report_form_fields.return_value = {}

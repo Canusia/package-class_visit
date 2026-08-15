@@ -1,6 +1,6 @@
 from django.test import TestCase
 
-from class_visit.class_visit.settings.class_visit import class_visit as CVSettings
+from ..settings.class_visit import class_visit as CVSettings
 from cis.models.settings import Setting
 
 
