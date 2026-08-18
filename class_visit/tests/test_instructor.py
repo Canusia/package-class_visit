@@ -1,8 +1,8 @@
 """
 Instructor class-visit tests.
-Run:
+Run (the app label works in either layout):
     docker exec -w /app/webapp django_web_ewu \
-        python manage.py test class_visit.class_visit.tests.test_instructor -v 2 --noinput
+        python manage.py test class_visit -v 2 --noinput
 """
 import uuid
 from unittest.mock import patch, MagicMock, PropertyMock
