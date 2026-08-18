@@ -125,9 +125,13 @@ This package ships to **many tenants**, so guard portability:
   **non-`.py` data** (templates, staticfiles, fixtures) only ships if covered by `MANIFEST.in`.
   Add a `recursive-include` line for any new data directory. The `submod-package-manifest`
   skill audits this; run it before tagging.
-- **Versioning** — tag-driven. Bump the tag, update the host's
-  `webapp/requirements.txt` pin (`@vX.Y.Z`) and the submodule pointer together. `setup.cfg` /
-  `pyproject.toml` `version` stays nominal.
+- **Versioning** — tag-driven, but the metadata is **not** nominal: bump `version` in both
+  `setup.cfg` and `pyproject.toml` in the same commit you tag, matching the tag. pip keys
+  upgrades off that string, so a package whose version never moves is treated as already
+  satisfied — `pip install -r requirements.txt` silently keeps the old code even though the
+  pin moved, with no error and no warning. (This is exactly what happened at v0.0.14, where
+  the metadata still read `0.1`.) Then update the host's `webapp/requirements.txt` pin
+  (`@vX.Y.Z`) and the submodule pointer together.
 - **Tests** — add/adjust tests under `class_visit/tests/` and run them in the ewu container
   before committing.
 
