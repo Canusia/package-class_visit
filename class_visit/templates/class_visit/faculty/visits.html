@@ -139,12 +139,31 @@
           return $('<div>').text(s == null ? '' : s).html();
         }
 
+        /* Copy a filter form's current values into the DataTables request.
+           Both tables read their filters this way — inside `ajax.data`, so the
+           values are read on every request including the first. The term
+           <select> is server-rendered with the active term already selected, so
+           a table handed a bare url string listed every term while the
+           dropdown claimed otherwise, and re-picking the term that was already
+           showing fires no `change` at all. Reading at request time also keeps
+           the filter across paging, sorting and every ajax.reload().
+
+           Pass the form selector: both forms on this page hold a
+           select[name="term_id"], so an unscoped lookup reads the wrong tab. */
+        function cvApplyFilter(d, formSelector) {
+          $(formSelector).find(':input[name]').each(function () {
+            d[this.name] = $(this).val();
+          });
+        }
+
         $(document).ready(function () {
 
           /* ── Schedulable Sections DataTable ── */
-          var section_baseURL = '{{ class_sections_api_url }}';
           tbl_class_sections = $('#records_class_sections').DataTable({
-            ajax: section_baseURL,
+            ajax: {
+              url: '{{ class_sections_api_url|escapejs }}',
+              data: function (d) { cvApplyFilter(d, '#class_section_filter'); }
+            },
             serverSide: true,
             processing: true,
             order: [[0, 'desc']],
@@ -191,12 +210,10 @@
           });
 
           $(document).on('change', '#class_section_filter :input', function() {
-            var params = $('#class_section_filter').serialize();
-            tbl_class_sections.ajax.url(section_baseURL + '&' + params).load();
+            tbl_class_sections.ajax.reload();
           });
 
           /* ── Scheduled Visits DataTable ── */
-          var visit_baseURL = '{{ api_url }}';
           var visitColumns = [
               { orderable: false, render: function(d, t, row) {
                   return '<input type="checkbox" class="visit-select" value="' + row.id + '">';
@@ -252,7 +269,10 @@
           }});
 
           tbl_visits = $('#records_all').DataTable({
-            ajax: visit_baseURL,
+            ajax: {
+              url: '{{ api_url|escapejs }}',
+              data: function (d) { cvApplyFilter(d, '#visit_filter'); }
+            },
             serverSide: true,
             processing: true,
             order: [[1, 'desc']],
@@ -262,8 +282,7 @@
           });
 
           $(document).on('change', '#visit_filter :input', function() {
-            var params = $('#visit_filter').serialize();
-            tbl_visits.ajax.url(visit_baseURL + '&' + params).load();
+            tbl_visits.ajax.reload();
           });
 
           /* ── Select-all checkbox ── */
