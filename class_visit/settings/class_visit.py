@@ -391,14 +391,21 @@ class class_visit(forms.Form):
             'visitor_reminder_message': '',
             'reminder_every_days': 7,
         }
-        try:
-            setting = Setting.objects.get(key=self.key)
-        except Setting.DoesNotExist:
-            setting = Setting()
-            setting.key = self.key
+        # Seed-only: add missing keys, never replace configured ones. install()
+        # runs from register_settings whenever no SettingRecord named
+        # 'class_visit' exists, which an ordinary container boot can reach with
+        # the Setting row already populated — so assigning `defaults` wholesale
+        # replaced a tenant's entire Class Visit configuration with no error and
+        # no warning (#10). '' and 'No' are real configured choices, not "unset",
+        # so presence of the key is the only test.
+        setting, _created = Setting.objects.get_or_create(
+            key=self.key, defaults={'value': {}})
 
-        setting.value = defaults
-        setting.save()
+        value = setting.value if isinstance(setting.value, dict) else {}
+        missing = {k: v for k, v in defaults.items() if k not in value}
+        if missing:
+            setting.value = {**value, **missing}
+            setting.save()
 
     def _to_python(self):
         """Return cleaned form data as a plain dict for storage."""
