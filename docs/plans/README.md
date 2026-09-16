@@ -32,12 +32,28 @@ Close #7 when #14 ships.
 
 #14 adds four settings keys, so it must land after #10 — see that plan.
 
-## Not yet planned
+## Batch 3
 
-#6 (rubric report fields) and #8 (department-scoped access). Both need a product
-decision before they can be written: #6 whether the target is EWU's 12x4 grid or a
-general rubric builder, #8 whether "department" keys off an existing model or needs a new
-user-to-department mapping.
+| # | Plan | Shape | Decisions open? |
+|---|---|---|---|
+| 8 | [Role-aware access and the faculty→teacher mapping](2026-09-16-08-role-and-teacher-scoped-access.md) | scoping change | no |
+
+Land #13 and #12 first — #8 narrows the same faculty querysets.
+
+Batch 3 also carries:
+
+| # | Plan | Shape | Decisions open? |
+|---|---|---|---|
+| 6 | [Rubric report fields (narrow)](2026-09-16-06-rubric-report-fields.md) | field-engine feature | no |
+
+Land #11 first — it touches the same ChoiceField blank-choice logic.
+
+**Every open issue now has a plan.**
+
+## Shipped ahead of the batches
+
+The `edit_visit_report` authorization hole (no issue filed yet) — fixed in `02ca1e8`:
+only a visit's `visitors`, or CE, may write its report.
 
 ## Found while planning, not yet filed
 
