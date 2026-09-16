@@ -9,6 +9,7 @@ from cis.models.course import CourseAdministrator
 
 from ..models import VisitSchedule
 from ..settings.class_visit import class_visit as ClassVisitSettings
+from ..services.section_scope import not_needed_section_ids, status_filter_to_db
 
 
 def _visit_type_choices(settings_dict):
@@ -92,22 +93,49 @@ class CEVisitScheduleForm(forms.Form):
             anchor = None
 
         if anchor:
-            # Section choices: same teacher + term + course
-            sections = ClassSection.objects.filter(
+            # Section choices: same teacher + term + course, honouring the two
+            # rules the faculty form has always honoured (#12) -- the configured
+            # section_status_filter, and the NotNeededVisit exemption list.
+            allowed_status_codes = status_filter_to_db(
+                settings_dict.get('section_status_filter', 'active')
+            )
+            sections = list(ClassSection.objects.filter(
                 teacher=anchor.teacher,
                 term=anchor.term,
                 course=anchor.course,
-            )
-            section_choices = [
-                (
+                status__in=allowed_status_codes,
+            ))
+            excluded_ids = not_needed_section_ids(sections)
+
+            # Sections already on the visit being edited stay selectable even
+            # when the filters would now exclude them: dropping them from the
+            # choices would silently remove them from the visit on save, turning
+            # a display filter into data loss. They are labelled so the CE user
+            # can see why an otherwise-filtered section is listed.
+            existing_ids = set()
+            if visit_id and str(visit_id) != '-1':
+                existing = VisitSchedule.objects.filter(pk=visit_id).first()
+                if existing:
+                    existing_sections = list(existing.class_sections.all())
+                    existing_ids = {s.id for s in existing_sections}
+                    known = {s.id for s in sections}
+                    sections += [s for s in existing_sections if s.id not in known]
+
+            section_choices = []
+            for s in sections:
+                if s.id in excluded_ids and s.id not in existing_ids:
+                    continue
+                suffix = ''
+                if s.id in existing_ids and (
+                        s.id in excluded_ids or s.status not in allowed_status_codes):
+                    suffix = ' — currently scheduled'
+                section_choices.append((
                     str(s.id),
                     mark_safe(
-                        f'{s.course} / {s.term}'
+                        f'{s.course} / {s.term}{suffix}'
                         f'<br><span class="text-muted">Period: {s.period_time}</span>'
                     ),
-                )
-                for s in sections
-            ]
+                ))
             self.fields['class_sections'].choices = section_choices
             self.fields['class_sections'].initial = [str(anchor.id)]
 

@@ -10,16 +10,7 @@ from cis.models.customuser import CustomUser
 from ..models import VisitSchedule, VisitReport, NotNeededVisit
 from ..settings.class_visit import class_visit as ClassVisitSettings
 from ..services import report_fields
-
-
-def _status_filter_to_db(section_status_filter: str):
-    """Map settings value to list of ClassSection.status DB codes."""
-    mapping = {
-        'active': ['A'],
-        'inactive': ['C'],
-        'all': ['A', 'C'],
-    }
-    return mapping.get(section_status_filter, ['A'])
+from ..services.section_scope import status_filter_to_db as _status_filter_to_db
 
 
 class VisitScheduleForm(forms.Form):
