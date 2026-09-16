@@ -1,5 +1,11 @@
 """The embedded visits partial (`schedule/class_visits.html`).
 
+NOTE: this file is LIVE, despite living in the legacy-looking `templates/schedule/`
+directory. Its five siblings there were deleted in #9 as genuinely dead (no view
+rendered them, and two used a `ce_url` that reversed a URL name which does not
+exist). This one is included by seven CE detail-page tabs in `cis` and ships to
+every tenant, so do not "finish the job" by deleting it.
+
 Host tenants include this partial from seven CE detail-page tabs (class
 section, teacher, course, term, academic year, high school, faculty
 coordinator). It is include-only — no view renders it — so a stale URL name

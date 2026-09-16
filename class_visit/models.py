@@ -224,24 +224,6 @@ class VisitSchedule(models.Model):
             return False
 
     @property
-    def visit_report_faculty_url(self):
-        visit_report = self.has_report()
-
-        if not visit_report:
-            return reverse_lazy(
-                'faculty_class_visit:edit_visit_report',
-                kwargs={
-                    'visit_id': self.id
-                }
-            )
-        return reverse_lazy(
-            'faculty_class_visit:edit_visit_report',
-            kwargs={
-                'visit_id': self.id,
-            }
-        )
-        
-    @property
     def delete_url(self):
         return reverse_lazy(
             'class_visit:ce_delete_visit',
@@ -305,19 +287,7 @@ class VisitSchedule(models.Model):
         )
         return (summary, detailed_log)
 
-    @property
-    def ce_url(self):
-        try:
-            return reverse_lazy(
-                'class_visit:edit_visit',
-                kwargs={
-                    'class_section_id': self.class_sections.all()[0].id,
-                    'visit_id': self.id
-                }
-            )
-        except IndexError:
-            return '#'
-        
+
 class VisitReport(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
 

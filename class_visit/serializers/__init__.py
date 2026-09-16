@@ -36,18 +36,7 @@ class VisitScheduleSerializer(serializers.ModelSerializer):
         read_only=True
     )
     
-    ce_url = serializers.CharField(
-        read_only=True
-    )
     
-    visit_report_faculty_url = serializers.CharField(
-        read_only=True
-    )
-
-    delete_url = serializers.CharField(
-        read_only=True
-    )
-
     payment_status_sexy = serializers.CharField()
 
     class Meta:
@@ -58,12 +47,9 @@ class VisitScheduleSerializer(serializers.ModelSerializer):
             'class_sections',
             'visitors',
             'visit_date',
-            'ce_url',
             'has_started_report',
             'has_submitted_report',
-            'visit_report_faculty_url',
             'payment_status_sexy',
-            'delete_url',
             'createdon'
         ]
 
@@ -115,10 +101,6 @@ class ClassSectionVisitSerializer(serializers.ModelSerializer):
     end_date = serializers.DateField(
         format='%m/%d/%Y'
     )
-    ce_url = serializers.CharField(
-        read_only=True
-    )
-
     # syllabi_links = serializers.ListField()
     schedule = serializers.CharField(read_only=True)
 
@@ -164,7 +146,6 @@ class ClassSectionVisitSerializer(serializers.ModelSerializer):
             'min_enrollment',
             'enrollment',
             'schedule',
-            'ce_url',
             'grade_status',
             'visit_schedule',
             'syllabi'

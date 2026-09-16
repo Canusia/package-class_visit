@@ -46,12 +46,11 @@ flowchart TD
 
 Class visits are conducted by **visitors** — typically CE administrators or faculty course administrators who observe the classroom and write the report. Visits can be scheduled by your central CE office, by faculty who oversee the course, or both.
 
-**1.1** Who in your program schedules class visits?
-
-- [ ] CE office staff only
-- [ ] Faculty / course administrators schedule their own visits
-- [ ] Both CE staff and faculty schedule visits
-- [ ] Other: ____________________________________
+**1.1** *(For information — not a choice.)* **Both CE staff and faculty schedule visits.**
+CE staff schedule from the CE Class Visits page; faculty schedule their own from the
+faculty portal. Both are always available, so there is nothing to configure here. If your
+program wants only one side to schedule, that is handled at deployment by not exposing the
+other portal's menu entry.
 
 **1.2** Who typically serves as the **visitor** (the person who observes the class and writes the report)?
 
@@ -80,10 +79,9 @@ Each visit is tagged with a **type** so you can distinguish, for example, a firs
 | | |
 | | |
 
-**2.2** Is a visit type **required** every time a visit is scheduled, or optional?
-
-- [ ] Required
-- [ ] Optional
+**2.2** *(For information — not a choice.)* A visit type is **always required** when a
+visit is scheduled. Make sure the list in 2.1 covers every kind of visit your program
+records, including a general-purpose type if you need one.
 
 ---
 
@@ -97,12 +95,13 @@ When scheduling, the system presents a list of class sections to choose from. Yo
 - [ ] **Inactive / closed sections only**
 - [ ] **All sections**, regardless of status
 
-**3.2** Some sections never need a visit (for example, fully online sections, exempt courses, or sections delivered in an alternate format). The system lets staff flag a section as **"visit not needed"** so it drops off the unscheduled list. Do you want to use this exemption feature?
+**3.2** *(For information — not a choice.)* Some sections never need a visit (fully online
+sections, exempt courses, sections delivered in an alternate format). CE staff can flag a
+section as **"visit not needed"** so it drops off the unscheduled list, and a flagged
+section is no longer offered when scheduling from either the CE or the faculty side. The
+feature is always available; simply leave the list empty if you do not use it.
 
-- [ ] Yes — we will mark certain sections as not needing a visit
-- [ ] No — every section is expected to receive a visit
-
-**3.3 (If yes)** What kinds of sections would you typically mark as not needing a visit?
+**3.3** What kinds of sections would you typically mark as not needing a visit?
 
 ____________________________________
 
