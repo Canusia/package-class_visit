@@ -13,6 +13,7 @@ from ..views.instructor import (
     confirm_visit_view,
     InstructorVisitScheduleViewSet,
     do_bulk_action,
+    sign_report,
 )
 
 app_name = 'instructor_class_visit'
@@ -39,6 +40,11 @@ urlpatterns = [
         'report/<uuid:visit_id>/pdf/',
         _guard(report_pdf),
         name='report_pdf',
+    ),
+    path(
+        'report/<uuid:visit_id>/sign/',
+        _guard(sign_report),
+        name='sign_report',
     ),
     path(
         'confirm/<str:token>/',

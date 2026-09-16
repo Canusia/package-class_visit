@@ -4,12 +4,13 @@ import logging
 import pdfkit
 
 from django.contrib.auth.decorators import login_required
-from django.shortcuts import render, get_object_or_404
+from django.shortcuts import redirect, render, get_object_or_404
 from django.template.loader import get_template
 from django.urls import reverse
 from django.http import HttpResponse, Http404
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
+from django.utils import timezone
 
 from rest_framework import viewsets
 
@@ -18,6 +19,7 @@ from cis.models.teacher import Teacher
 from cis.utils import INSTRUCTOR_user_only, user_has_instructor_role
 
 from ..models import VisitSchedule, VisitReport
+from ..services import emails
 from ..serializers.instructor import InstructorVisitScheduleSerializer
 from ..services import report_fields as rf_service
 from ..services.confirmation import confirm_visit as svc_confirm
@@ -29,6 +31,11 @@ logger = logging.getLogger(__name__)
 # ---------------------------------------------------------------------------
 # Helpers
 # ---------------------------------------------------------------------------
+
+def _signoff_enabled():
+    from ..settings.class_visit import class_visit as CVSettings
+    return CVSettings.from_db().get('instructor_signature', 'No') == 'Yes'
+
 
 def _get_teacher_or_none(request):
     """Return the Teacher for the logged-in user, or None."""
@@ -146,6 +153,14 @@ def report_detail(request, visit_id):
         # Downloadable whenever the report is submitted — not tied to whether
         # any of its fields happen to be marked public.
         'can_download': bool(report and report.status == 'Submitted'),
+        'report': report,
+        # Sign-off panel: only for a submitted report, and only when the tenant
+        # has opted in (#14). Advisory -- it gates nothing else on this page.
+        'show_signoff': bool(
+            report and report.status == 'Submitted'
+            and _signoff_enabled()),
+        'sign_url': reverse(
+            'instructor_class_visit:sign_report', kwargs={'visit_id': visit.id}),
         'pdf_url': reverse(
             'instructor_class_visit:report_pdf', kwargs={'visit_id': visit.id}),
         'ajax': ajax,
@@ -205,6 +220,66 @@ def confirm_visit_view(request, token):
 
 # Mark as public — bypass LoginRequiredMiddleware (token is the credential)
 confirm_visit_view.login_required = False
+
+
+@require_POST
+@login_required
+def sign_report(request, visit_id):
+    """Record an instructor's acknowledgement of, and response to, a report (#14).
+
+    Advisory: this never changes report status or touches the report lifecycle. A
+    signature is immutable once given -- a correction is a new response, not an
+    edited attestation -- and a faculty re-submission clears it
+    (VisitReport.clear_instructor_signature).
+
+    404 rather than 403 throughout, so the endpoint does not confirm which visits
+    exist: for the feature being off, for another instructor's visit, and for a
+    report that is not submitted yet.
+    """
+    from ..models import VisitReportFile
+    from ..settings.class_visit import class_visit as CVSettings
+
+    if CVSettings.from_db().get('instructor_signature', 'No') != 'Yes':
+        raise Http404('Instructor sign-off is not enabled.')
+
+    teacher = _get_teacher_or_none(request)
+    if teacher is None:
+        raise Http404('No visit matches the given query.')
+
+    visit = VisitSchedule.objects.filter(
+        pk=visit_id, class_sections__teacher=teacher).distinct().first()
+    report = visit.has_report() if visit else None
+    if not report or report.status != 'Submitted':
+        raise Http404('No submitted report matches the given query.')
+
+    now = timezone.now()
+    fields = []
+
+    signature = (request.POST.get('instructor_signature') or '').strip()
+    if signature and not report.instructor_signature:
+        report.instructor_signature = signature[:255]
+        report.instructor_signed_on = now
+        fields += ['instructor_signature', 'instructor_signed_on']
+
+    response_text = (request.POST.get('instructor_response') or '').strip()
+    if response_text:
+        report.instructor_response = response_text
+        report.instructor_responded_on = now
+        fields += ['instructor_response', 'instructor_responded_on']
+
+    if fields:
+        report.save(update_fields=fields)
+
+    uploaded = request.FILES.get('response_file')
+    if uploaded:
+        VisitReportFile.objects.create(
+            visit_report=report, file=uploaded, uploaded_by=request.user,
+            kind=VisitReportFile.INSTRUCTOR_RESPONSE)
+
+    if response_text or uploaded:
+        emails.notify_visitor_instructor_responded(report)
+
+    return redirect('instructor_class_visit:report_detail', visit_id=visit.id)
 
 
 @require_POST

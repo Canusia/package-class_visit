@@ -24,6 +24,8 @@ BASE_DATA = {
     'instructor_confirm_link': 'No',
     'notify_teacher_on_submit': 'No',
     'notify_office_on_submit': 'Yes',
+    'instructor_signature': 'No',
+    'notify_visitor_on_response': 'No',
     'teacher_submit_subject': '',
     'teacher_submit_message': '',
     'visitor_reminder_subject': '',

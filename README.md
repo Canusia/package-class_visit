@@ -141,6 +141,8 @@ python manage.py collectstatic --noinput
 - `notify_teacher_on_schedule` + `teacher_scheduled_subject` / `teacher_scheduled_message`
 - `instructor_confirm_link` — when Yes, the `{{confirmation_link}}` shortcode is populated in the scheduled email
 - `notify_teacher_on_submit` + `teacher_submit_subject` / `teacher_submit_message`
+- `instructor_signature` (Yes / No, default No) — when Yes, an instructor viewing a submitted report can type their name to acknowledge it and add a written response with an optional attachment. Advisory: it never blocks submission or any other flow, and a faculty re-submission clears the signature while keeping the response.
+- `notify_visitor_on_response` (Yes / No, default No) + `visitor_response_subject` / `visitor_response_message` — emails the visitor(s) when an instructor responds.
 - `notify_office_on_submit` (Yes / No, default Yes) + `office_submit_subject` / `office_submit_message` — the internal copy sent to `notify_target`. Blank subject/message fall back to the teacher wording, which is what the module did unconditionally before.
 - `visitor_reminder_subject` / `visitor_reminder_message` + `reminder_every_days`
 - `payment_tracking` (Yes / No) — when Yes, CE staff can **Mark Selected as Paid** on the CE visits page, and both the CE and faculty visits tables show a **Payment Status** column. (Shown at the bottom of the settings form.)

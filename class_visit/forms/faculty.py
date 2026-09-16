@@ -326,6 +326,12 @@ class VisitReportDynamicForm(forms.Form):
 
         if commit:
             report.save()
+            # An instructor's attestation refers to a specific version of the
+            # report, so re-submitting invalidates it. Their written response is
+            # their own words about the visit, not a statement about a version,
+            # so clear_instructor_signature() keeps it (#14).
+            if new_status == 'Submitted' and report.instructor_signature:
+                report.clear_instructor_signature()
             if new_status == 'Submitted' and was_draft:
                 if settings_obj.get('notify_teacher_on_submit') == 'Yes':
                     email_service.notify_teacher_report_submitted(report)

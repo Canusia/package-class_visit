@@ -318,6 +318,36 @@ class VisitReport(models.Model):
         choices=YES_NO_SELECT_OPTIONS
     )
 
+    # Instructor sign-off (#14). Advisory throughout: none of this gates report
+    # submission, status, notifications or any existing flow, and a report with
+    # no sign-off stays fully valid.
+    #
+    # A typed attestation, matching the FERPA and student-agreement flows in cis,
+    # rather than the drawn signature pad used by mou: the pad serializes only on
+    # a click of `input.submit` (this form submits via fetch), and it loads from
+    # a CDN the platform CSP does not allow. A CE override writes
+    # 'Marked as signed by {user}', the platform-wide sentinel.
+    instructor_signature = models.CharField(max_length=255, blank=True, default='')
+    instructor_signed_on = models.DateTimeField(null=True, blank=True)
+    instructor_response = models.TextField(blank=True, default='')
+    instructor_responded_on = models.DateTimeField(null=True, blank=True)
+
+    @property
+    def is_signed_by_instructor(self):
+        return bool(self.instructor_signature)
+
+    def clear_instructor_signature(self):
+        """Drop the attestation, keeping the written response.
+
+        A signature attests to a specific version of a report, so a faculty
+        re-submission invalidates it. The response is the instructor's own words
+        about the visit, not a statement about a version, so it survives.
+        """
+        if self.instructor_signature or self.instructor_signed_on:
+            self.instructor_signature = ''
+            self.instructor_signed_on = None
+            self.save(update_fields=['instructor_signature', 'instructor_signed_on'])
+
 
     @property
     def is_submitted(self):
@@ -439,10 +469,24 @@ class VisitReport(models.Model):
         self.save()
 
 class VisitReportFile(models.Model):
+    FACULTY_ATTACHMENT = 'faculty_attachment'
+    INSTRUCTOR_RESPONSE = 'instructor_response'
+    KIND_OPTIONS = (
+        (FACULTY_ATTACHMENT, 'Visitor attachment'),
+        (INSTRUCTOR_RESPONSE, 'Instructor response'),
+    )
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     visit_report = models.ForeignKey(VisitReport, on_delete=models.CASCADE, related_name='files')
     uploaded_at = models.DateTimeField(auto_now_add=True)
     file = models.FileField(upload_to='visit_report_files/', storage=PrivateMediaStorage())
+    # Who attached it, and on whose behalf. Without these the model cannot tell a
+    # visitor's evidence from an instructor's rebuttal (#14). Null keeps rows
+    # created before this field loadable.
+    uploaded_by = models.ForeignKey(
+        'cis.CustomUser', null=True, blank=True, on_delete=models.SET_NULL)
+    kind = models.CharField(
+        max_length=32, choices=KIND_OPTIONS, default=FACULTY_ATTACHMENT)
 
     def __str__(self):
         return self.file.name

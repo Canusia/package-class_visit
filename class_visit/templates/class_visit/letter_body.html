@@ -28,3 +28,35 @@
   </tr>
   {% endfor %}
 </table>
+
+{% if signoff.signature or signoff.response or signoff.files %}
+  <h3 style="margin-top:24px;">Instructor Sign-Off</h3>
+  <table style="width:100%;border-collapse:collapse;">
+    <tr>
+      <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">Signed by</th>
+      <td style="padding:4px 8px;border:1px solid #ccc;">
+        {% if signoff.signature %}{{ signoff.signature }}{% else %}<em>Not yet signed</em>{% endif %}
+      </td>
+    </tr>
+    {% if signoff.signed_on %}
+      <tr>
+        <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">Signed on</th>
+        <td style="padding:4px 8px;border:1px solid #ccc;">{{ signoff.signed_on }}</td>
+      </tr>
+    {% endif %}
+    {% if signoff.response %}
+      <tr>
+        <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">Instructor response{% if signoff.responded_on %} ({{ signoff.responded_on }}){% endif %}</th>
+        <td style="padding:4px 8px;border:1px solid #ccc;">{{ signoff.response|linebreaksbr }}</td>
+      </tr>
+    {% endif %}
+    {% if signoff.files %}
+      <tr>
+        <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">Attached by instructor</th>
+        <td style="padding:4px 8px;border:1px solid #ccc;">
+          {% for name in signoff.files %}{{ name }}{% if not forloop.last %}<br>{% endif %}{% endfor %}
+        </td>
+      </tr>
+    {% endif %}
+  </table>
+{% endif %}

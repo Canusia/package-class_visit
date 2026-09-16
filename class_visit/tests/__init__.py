@@ -134,6 +134,8 @@ class ClassVisitSettingsTest(TestCase):
             'instructor_confirm_link': 'No',
             'notify_teacher_on_submit': 'No',
             'notify_office_on_submit': 'Yes',
+            'instructor_signature': 'No',
+            'notify_visitor_on_response': 'No',
             'teacher_submit_subject': '',
             'teacher_submit_message': '',
             'visitor_reminder_subject': 'Reminder',
@@ -295,6 +297,8 @@ class EmailServiceTest(TestCase):
         'instructor_confirm_link': 'No',
         'notify_teacher_on_submit': 'Yes',
         'notify_office_on_submit': 'Yes',
+        'instructor_signature': 'No',
+        'notify_visitor_on_response': 'No',
         'teacher_submit_subject': 'Report Done',
         'teacher_submit_message': 'Report submitted for {{teacher_first_name}}.',
         'visitor_reminder_subject': 'Reminder',
@@ -393,8 +397,19 @@ class PdfServiceTest(TestCase):
     """services/pdf.py unit tests."""
 
     def _make_visit_report(self, meta=None):
-        report = MagicMock()
+        # spec=VisitReport matters: a bare MagicMock implements __getitem__, and
+        # Django's template resolver tries dictionary lookup BEFORE attribute
+        # lookup -- so {% if report.instructor_signed_on %} was truthy however
+        # the attribute was set, and the letter's date filter then failed on a
+        # mock. A spec'd mock has no __getitem__, so resolution falls through to
+        # the attributes below, matching a real unsigned report (#14).
+        report = MagicMock(spec=VisitReport)
         report.meta = meta or {'strengths': 'Excellent', 'areas': 'Pacing'}
+        report.instructor_signature = ''
+        report.instructor_signed_on = None
+        report.instructor_response = ''
+        report.instructor_responded_on = None
+        report.files.filter.return_value = []
         vs = MagicMock()
         vs.visit_date_sexy = '01/15/2027'
         vs.class_sections_sexy = '<p>ACC 101</p>'

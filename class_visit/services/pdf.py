@@ -16,6 +16,40 @@ from django.template.loader import get_template
 from ..services.report_fields import report_values_for_display
 
 
+def _signoff_context(visit_report) -> dict:
+    """Instructor sign-off values for the letter, as display-ready strings.
+
+    Attachments are listed by name only: a PDF cannot embed them, and their
+    content is private media.
+    """
+    signed_on = getattr(visit_report, 'instructor_signed_on', None)
+    responded_on = getattr(visit_report, 'instructor_responded_on', None)
+
+    try:
+        from ..models import VisitReportFile
+        files = [
+            f.file.name.rsplit('/', 1)[-1]
+            for f in visit_report.files.filter(
+                kind=VisitReportFile.INSTRUCTOR_RESPONSE)
+        ]
+    except Exception:  # pragma: no cover - never break a letter over an attachment list
+        files = []
+
+    def _stamp(value, fmt):
+        try:
+            return value.strftime(fmt)
+        except Exception:  # pragma: no cover - non-datetime (e.g. a test double)
+            return ''
+
+    return {
+        'signature': getattr(visit_report, 'instructor_signature', '') or '',
+        'signed_on': _stamp(signed_on, '%m/%d/%Y %I:%M %p') if signed_on else '',
+        'response': getattr(visit_report, 'instructor_response', '') or '',
+        'responded_on': _stamp(responded_on, '%m/%d/%Y') if responded_on else '',
+        'files': files,
+    }
+
+
 def _build_letter_html(visit_report, public_only: bool = False) -> str:
     """
     Render the inner body HTML for one visit letter.
@@ -30,8 +64,16 @@ def _build_letter_html(visit_report, public_only: bool = False) -> str:
     visit = visit_report.visit_schedule
     teacher = visit.teacher
     rows = report_values_for_display(visit_report, public_only=public_only)
+    # Sign-off block (#14), assembled here as plain strings rather than left as
+    # attribute lookups in the template: a letter must never fail to render
+    # because of a value's type, and Django's template resolver tries
+    # dictionary lookup before attribute lookup, which makes model-attribute
+    # chains behave surprisingly for anything dict-like.
+    signoff = _signoff_context(visit_report)
+
     body = get_template('class_visit/letter_body.html').render({
         'report': visit_report,
+        'signoff': signoff,
         'visit': visit,
         'teacher_first_name': teacher.user.first_name if teacher else '',
         'teacher_last_name': teacher.user.last_name if teacher else '',

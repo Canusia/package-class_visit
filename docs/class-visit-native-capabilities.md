@@ -23,7 +23,7 @@ Each visit produces a structured report whose fields are fully defined by the in
 | **Custom Report Fields** | Institution-defined fields with configurable label, input type (short text, paragraph, dropdown, checkbox, date), required flag, and dropdown options. Fields can be **targeted to specific visit types** (shown only for those types), and the configuration is **validated on save**. |
 | **Public vs. Internal Fields** | Each field can be marked public (shared with the instructor and included in their downloadable report) or internal (visible only to CE/faculty). |
 | **Draft & Submit Workflow** | Reports are saved as Draft while in progress and finalized as Submitted, with notifications firing only on submission. |
-| **File Attachments** | Supporting files (photos, signed forms, handouts) can be attached to a report. |
+| **File Attachments** | An instructor can attach a document to their response on a submitted report, when Instructor Sign-Off is enabled. |
 | **Instructor Confirmation** | Optional one-click email link lets instructors confirm a scheduled visit date without logging in. |
 
 # Notifications & Communication

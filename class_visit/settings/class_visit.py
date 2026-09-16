@@ -203,6 +203,42 @@ class class_visit(forms.Form):
         ),
     )
 
+    # ---- Instructor sign-off ----
+    instructor_signature = forms.ChoiceField(
+        choices=YES_NO,
+        label='Instructor Sign-Off',
+        help_text=(
+            'When Yes, an instructor viewing a submitted report can type their name '
+            'to acknowledge it and add a written response with an optional file. '
+            'Advisory only: it never blocks report submission or any other flow.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    notify_visitor_on_response = forms.ChoiceField(
+        choices=YES_NO,
+        label='Notify Visitor When Instructor Responds',
+        help_text='When Yes, the visitor(s) are emailed if an instructor writes a response.',
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    visitor_response_subject = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Instructor Response Email Subject',
+    )
+
+    visitor_response_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea,
+        label='Instructor Response Email Message',
+        help_text=(
+            'Shortcodes: {{visitor_first_name}}, {{teacher_first_name}}, '
+            '{{teacher_last_name}}, {{visit_date}}, {{class_sections}}, {{report_url}} '
+            '(links to the faculty report page; the recipient must sign in)'
+        ),
+    )
+
     # ---- Visitor reminder ----
     visitor_reminder_subject = forms.CharField(
         max_length=500,
@@ -427,6 +463,11 @@ class class_visit(forms.Form):
             # silence an existing notification on upgrade. Blank subject/message
             # fall back to the teacher wording, reproducing today's email exactly.
             'notify_office_on_submit': 'Yes',
+            # No: an existing tenant sees no change until it opts in.
+            'instructor_signature': 'No',
+            'notify_visitor_on_response': 'No',
+            'visitor_response_subject': 'Instructor Response to Visit Report',
+            'visitor_response_message': '',
             'office_submit_subject': '',
             'office_submit_message': '',
             'visitor_reminder_subject': 'Class Visit Reminder',

@@ -294,3 +294,34 @@ def notify_visitor_payment_processed(visit_report) -> None:
         }
         message = render_template(message_template, ctx)
         send_app_email(subject, message, [visitor.email])
+
+
+def notify_visitor_instructor_responded(visit_report) -> None:
+    """Tell the visitor(s) that the instructor responded to their report (#14).
+
+    Gated like every other optional notification. Silence is the alternative --
+    without it nobody learns a response exists -- but it stays opt-in so an
+    upgrading tenant sends nothing new until it chooses to.
+    """
+    cfg = _get_settings()
+    if cfg.get('notify_visitor_on_response', 'No') != 'Yes':
+        return
+
+    visit_schedule = visit_report.visit_schedule
+    teacher = visit_schedule.teacher
+
+    subject = cfg.get('visitor_response_subject', 'Instructor Response Received')
+    body = cfg.get('visitor_response_message', '')
+
+    for visitor in visit_schedule.visitors.all():
+        if not visitor.email:
+            continue
+        ctx = {
+            'visitor_first_name': visitor.first_name,
+            'teacher_first_name': teacher.user.first_name if teacher else '',
+            'teacher_last_name': teacher.user.last_name if teacher else '',
+            'visit_date': visit_schedule.visit_date_sexy,
+            'class_sections': visit_schedule.class_sections_sexy,
+            'report_url': visitor_report_url(visit_schedule),
+        }
+        send_app_email(subject, render_template(body, ctx), [visitor.email])
