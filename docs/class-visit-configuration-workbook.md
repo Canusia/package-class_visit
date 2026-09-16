@@ -219,10 +219,29 @@ ____________________________________
 
 Every submitted report also notifies someone on **your** side so the record can be reviewed or filed. This can route to each course's administrator automatically, or to a single shared inbox.
 
-**6C.1** Who should receive the internal "report submitted" notification?
+**6C.1** Send the internal "report submitted" notification at all? (Default: Yes.)
+
+- [ ] Yes
+- [ ] No
+
+**6C.2** Who should receive it?
 
 - [ ] The **course administrator** for that course (routed automatically per course)
 - [ ] A **single shared inbox** — address: ____________________________________
+
+**6C.3** Subject and message for this email. Leave both blank to reuse the instructor
+wording from 6B — note that copy is addressed to the instructor who was observed, so
+most programs write their own here.
+
+> Subject: ____________________________________
+>
+> Message:
+>
+> Available shortcodes: `{{teacher_first_name}}`, `{{teacher_last_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{public_report_url}}`
+>
+> `{{public_report_url}}` requires the recipient to sign in. Recipients of this email are
+> course administrators, who do not have access to the Class Visits pages — treat this
+> notification as a record for filing rather than a call to action.
 
 ---
 

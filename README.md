@@ -141,6 +141,7 @@ python manage.py collectstatic --noinput
 - `notify_teacher_on_schedule` + `teacher_scheduled_subject` / `teacher_scheduled_message`
 - `instructor_confirm_link` — when Yes, the `{{confirmation_link}}` shortcode is populated in the scheduled email
 - `notify_teacher_on_submit` + `teacher_submit_subject` / `teacher_submit_message`
+- `notify_office_on_submit` (Yes / No, default Yes) + `office_submit_subject` / `office_submit_message` — the internal copy sent to `notify_target`. Blank subject/message fall back to the teacher wording, which is what the module did unconditionally before.
 - `visitor_reminder_subject` / `visitor_reminder_message` + `reminder_every_days`
 - `payment_tracking` (Yes / No) — when Yes, CE staff can **Mark Selected as Paid** on the CE visits page, and both the CE and faculty visits tables show a **Payment Status** column. (Shown at the bottom of the settings form.)
 - `notify_visitor_on_paid` (Yes / No) + `visitor_paid_subject` / `visitor_paid_message` — when payment tracking is on and this is Yes, each visitor is emailed when their report is marked paid. The message uses the same shortcodes as the visitor reminder: `{{visitor_first_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{report_url}}`. Both report-link shortcodes point at login-gated pages.

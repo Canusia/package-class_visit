@@ -170,6 +170,39 @@ class class_visit(forms.Form):
         ),
     )
 
+    # ---- Office notification on submit ----
+    # The institution's copy of "a report was submitted". It reused the
+    # instructor's subject/body verbatim and fired unconditionally, so course
+    # administrators received copy addressed to the observed instructor (#5).
+    notify_office_on_submit = forms.ChoiceField(
+        choices=YES_NO,
+        label='Notify Office When Report Submitted',
+        help_text=(
+            'When Yes, the notification target above is emailed on submit. '
+            'Leave the subject/message blank to keep using the teacher wording.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    office_submit_subject = forms.CharField(
+        max_length=500,
+        required=False,
+        label='Office Submit Notification Subject',
+        help_text='Blank falls back to the Teacher Submit subject.',
+    )
+
+    office_submit_message = forms.CharField(
+        required=False,
+        widget=forms.Textarea,
+        label='Office Submit Notification Message',
+        help_text=(
+            'Blank falls back to the Teacher Submit message. Shortcodes: '
+            '{{teacher_first_name}}, {{teacher_last_name}}, {{visit_date}}, '
+            '{{class_sections}}, {{public_report_url}} '
+            '(links to the instructor portal; the recipient must sign in)'
+        ),
+    )
+
     # ---- Visitor reminder ----
     visitor_reminder_subject = forms.CharField(
         max_length=500,
@@ -390,6 +423,12 @@ class class_visit(forms.Form):
             'notify_teacher_on_submit': 'No',
             'teacher_submit_subject': 'Class Visit Report Submitted',
             'teacher_submit_message': '',
+            # Yes: the send is unconditional today, so defaulting to No would
+            # silence an existing notification on upgrade. Blank subject/message
+            # fall back to the teacher wording, reproducing today's email exactly.
+            'notify_office_on_submit': 'Yes',
+            'office_submit_subject': '',
+            'office_submit_message': '',
             'visitor_reminder_subject': 'Class Visit Reminder',
             'visitor_reminder_message': '',
             'reminder_every_days': 7,

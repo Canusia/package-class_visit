@@ -183,6 +183,13 @@ def notify_notification_target(visit_report) -> None:
     Records meta['course_admin_email_sent_on'] on the VisitReport.
     """
     cfg = _get_settings()
+
+    # Gated like every other notification in this module. Default 'Yes' because
+    # the send used to be unconditional -- defaulting to 'No' would silence an
+    # existing notification on upgrade (#5).
+    if cfg.get('notify_office_on_submit', 'Yes') != 'Yes':
+        return
+
     notify_target = cfg.get('notify_target', 'course_administrator')
 
     visit_schedule = visit_report.visit_schedule
@@ -215,8 +222,13 @@ def notify_notification_target(visit_report) -> None:
     if not recipients:
         return
 
-    subject = cfg.get('teacher_submit_subject', 'Visit Report Submitted')
-    message = render_template(cfg.get('teacher_submit_message', ''), ctx)
+    # Its own wording when configured; blank falls back to the instructor copy
+    # so an upgrading tenant keeps sending what it sends today (#5).
+    subject = (cfg.get('office_submit_subject') or '').strip() \
+        or cfg.get('teacher_submit_subject', 'Visit Report Submitted')
+    body = (cfg.get('office_submit_message') or '').strip() \
+        or cfg.get('teacher_submit_message', '')
+    message = render_template(body, ctx)
     send_app_email(subject, message, recipients)
 
     # Record sent timestamp

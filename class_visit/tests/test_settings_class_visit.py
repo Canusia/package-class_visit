@@ -23,6 +23,7 @@ BASE_DATA = {
     'teacher_scheduled_message': '',
     'instructor_confirm_link': 'No',
     'notify_teacher_on_submit': 'No',
+    'notify_office_on_submit': 'Yes',
     'teacher_submit_subject': '',
     'teacher_submit_message': '',
     'visitor_reminder_subject': '',
