@@ -65,6 +65,12 @@ Then:
   tenant sends the moment they upgrade.
 - If you would rather ship suggested office wording, it belongs in the workbook as copy to
   paste, not in `install()`.
+- **Recipients stay as they are.** The target keeps being active `CourseAdministrator`
+  rows with role exactly `Administrator` (or `generic_email`). Note the deliberate tension
+  with #8: `Administrator` plays no part in class-visit *access*, so these recipients
+  cannot open the visit the email refers to. That is intended — this is a heads-up to a
+  records inbox, not a call to action. Do not "fix" it by widening the role list, and do
+  not add a report link expecting them to click it.
 
 ## Tests (`class_visit/tests/test_office_submit_email.py`, new)
 

@@ -82,6 +82,13 @@ the floor, and say so in the release notes.
 
 **4. Leave CE alone.** `views/ce.py` has no user scoping by design — CE sees everything.
 
+**5. Do not touch the notification target.** `notify_notification_target`
+(`services/emails.py:170-182`) sends the "report submitted" email to active
+`CourseAdministrator` rows with role exactly `Administrator`. Excluding `Administrator`
+from access means those recipients keep getting the email for visits they cannot open.
+Decided and intended: the email is a heads-up to a records inbox. Access and notification
+use the same role vocabulary for different purposes; that is not a bug to reconcile.
+
 ## Upgrade risk — check before shipping
 
 Today **every** role has full faculty access. After this change, `Administrator` and
