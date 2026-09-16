@@ -2,7 +2,7 @@
 import logging
 
 from django.contrib.auth.decorators import login_required
-from django.http import HttpResponse, JsonResponse
+from django.http import Http404, HttpResponse, JsonResponse
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
@@ -13,7 +13,9 @@ from rest_framework import viewsets
 from cis.models.section import ClassSection
 from cis.models.course import CourseAdministrator, Course
 from cis.models.term import Term
-from cis.utils import FACULTY_user_only, active_term as get_active_term
+from cis.utils import (
+    FACULTY_user_only, active_term as get_active_term, user_has_cis_role,
+)
 from cis.menu import draw_menu
 
 from ..models import VisitSchedule, VisitReport, NotNeededVisit
@@ -182,12 +184,32 @@ def manage_visit(request, class_section_id, visit_id=None):
     })
 
 
+def _may_edit_report(user, visit):
+    """Who may write a visit's report: its visitors, or CE staff.
+
+    The report is the visitor's own account of a class they attended, so being a
+    CourseAdministrator for the course is deliberately not enough — that scopes what
+    appears in the faculty list, not who may write on it.
+
+    Without this the view was `get_object_or_404(VisitSchedule, pk=visit_id)` and nothing
+    more, while the URL guard only required *a* faculty role: any faculty user could open
+    and submit a report on any visit in the tenant given its UUID.
+    """
+    if user_has_cis_role(user):
+        return True
+    return visit.visitors.filter(pk=user.pk).exists()
+
+
 @login_required(login_url='/')
 @xframe_options_exempt
 def edit_visit_report(request, visit_id):
     """Write or edit a visit report. Renders inside an iframe modal."""
     template = 'class_visit/faculty/edit_visit_report.html'
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
+
+    if not _may_edit_report(request.user, visit):
+        # 404, not 403: do not confirm that a visit with this id exists.
+        raise Http404('No visit matches the given query.')
 
     # Load existing report meta if any
     existing_report = getattr(visit, 'report', None)
