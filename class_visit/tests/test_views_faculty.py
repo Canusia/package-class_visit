@@ -39,14 +39,13 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
     @patch(f'{PKG}.views.faculty.ClassVisitSettings')
     @patch(f'{PKG}.views.faculty.NotNeededVisit')
     @patch(f'{PKG}.views.faculty.ClassSection')
-    @patch(f'{PKG}.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.scoped_sections')
     def test_active_filter_excludes_inactive(
         self, MockCA, MockCS, MockNNV, MockSettings
     ):
         from ..views.faculty import FacultySchedulableSectionViewSet
 
         MockSettings.from_db.return_value = {'section_status_filter': 'active'}
-        MockCA.objects.filter.return_value.values_list.return_value = []
         MockNNV.objects.filter.return_value.values_list.return_value = []
         qs = MagicMock()
         MockCS.objects.filter.return_value.exclude.return_value = qs
@@ -75,7 +74,7 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
     @patch(f'{PKG}.views.faculty.ClassVisitSettings')
     @patch(f'{PKG}.views.faculty.NotNeededVisit')
     @patch(f'{PKG}.views.faculty.ClassSection')
-    @patch(f'{PKG}.views.faculty.CourseAdministrator')
+    @patch(f'{PKG}.views.faculty.scoped_sections')
     def test_not_needed_excluded(
         self, MockCA, MockCS, MockNNV, MockSettings
     ):
@@ -83,7 +82,6 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
 
         not_needed_id = uuid.uuid4()
         MockSettings.from_db.return_value = {'section_status_filter': 'all'}
-        MockCA.objects.filter.return_value.values_list.return_value = []
         MockNNV.objects.filter.return_value.values_list.return_value = [not_needed_id]
         qs = MagicMock()
         MockCS.objects.filter.return_value.exclude.return_value = qs
@@ -109,12 +107,13 @@ class FacultySchedulableSectionViewSetQuerysetTest(TestCase):
 class NotifyOnScheduleTest(TestCase):
     """Scheduling a visit fires notify_teacher_visit_scheduled when setting is Yes."""
 
+    @patch(f'{PKG}.views.faculty.scoped_sections')
     @patch(f'{PKG}.views.faculty.get_object_or_404')
     @patch(f'{PKG}.views.faculty.emails')
     @patch(f'{PKG}.views.faculty.ClassVisitSettings')
     @patch(f'{PKG}.views.faculty.VisitScheduleForm')
     def test_notify_called_when_setting_yes(
-        self, MockForm, MockSettings, MockEmails, MockGetObj):
+        self, MockForm, MockSettings, MockEmails, MockGetObj, MockScoped):
         MockSettings.from_db.return_value = {
             'notify_teacher_on_schedule': 'Yes',
             'section_status_filter': 'active',

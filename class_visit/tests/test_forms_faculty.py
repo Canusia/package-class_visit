@@ -90,6 +90,7 @@ def _make_graph(suffix="a"):
     CourseAdministrator.objects.create(
         user=faculty_user,
         course=course,
+        role="Faculty",
         status="Active",
     )
 
@@ -222,6 +223,7 @@ class VisitScheduleFormValidationTest(TestCase):
         CourseAdministrator.objects.create(
             user=faculty_user,
             course=graph_b["course"],
+            role="Faculty",
             status="Active",
         )
 
@@ -272,6 +274,7 @@ class VisitScheduleFormValidationTest(TestCase):
         CourseAdministrator.objects.create(
             user=faculty_user,
             course=graph_b["course"],
+            role="Faculty",
             status="Active",
         )
 

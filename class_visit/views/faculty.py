@@ -12,7 +12,7 @@ from django.urls import reverse
 from rest_framework import viewsets
 
 from cis.models.section import ClassSection
-from cis.models.course import CourseAdministrator, Course
+from cis.models.course import Course
 from cis.models.term import Term
 from cis.utils import (
     FACULTY_user_only, active_term as get_active_term, user_has_cis_role,
@@ -28,6 +28,9 @@ from ..serializers.faculty import (
 )
 from ..services import emails, report_fields
 from ..services import pdf as pdf_service
+from ..services.scope import (
+    class_visit_administrators, scoped_course_ids, scoped_sections,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -58,17 +61,14 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
             settings_obj.get('section_status_filter', 'active')
         )
 
-        course_ids = CourseAdministrator.objects.filter(
-            user=self.request.user,
-            status__iexact='active',
-        ).values_list('course__id', flat=True)
+        sections = scoped_sections(self.request.user)
 
         not_needed_section_ids = NotNeededVisit.objects.filter(
-            class_section__course__id__in=course_ids,
+            class_section__in=sections,
         ).values_list('class_section__id', flat=True)
 
         qs = ClassSection.objects.filter(
-            course__id__in=course_ids,
+            id__in=sections.values('id'),
             status__in=allowed_status_codes,
         ).exclude(
             id__in=not_needed_section_ids,
@@ -94,13 +94,8 @@ class FacultyVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
     permission_classes = [FACULTY_user_only]
 
     def get_queryset(self):
-        course_ids = CourseAdministrator.objects.filter(
-            user=self.request.user,
-            status__iexact='active',
-        ).values_list('course__id', flat=True)
-
         qs = VisitSchedule.objects.filter(
-            class_sections__course__id__in=course_ids,
+            class_sections__in=scoped_sections(self.request.user),
         ).distinct().prefetch_related(
             'class_sections',
             'class_sections__course',
@@ -139,13 +134,18 @@ def manage_visit(request, class_section_id, visit_id=None):
     """Create or edit a VisitSchedule. Renders inside an iframe modal."""
     template = 'class_visit/faculty/manage_visit.html'
 
+    # Both lookups are scoped (#8): a UUID outside this user's sections 404s.
+    sections = scoped_sections(request.user)
     visit_schedule = None
     if visit_id:
-        visit_schedule = get_object_or_404(VisitSchedule, pk=visit_id)
+        visit_schedule = get_object_or_404(
+            VisitSchedule.objects.filter(class_sections__in=sections).distinct(),
+            pk=visit_id,
+        )
 
     # The visit is anchored to the section the faculty clicked from; the section
     # options are limited to that section's course taught by the same instructor.
-    anchor_section = get_object_or_404(ClassSection, pk=class_section_id)
+    anchor_section = get_object_or_404(sections, pk=class_section_id)
 
     if request.method == 'POST':
         form = VisitScheduleForm(
@@ -262,14 +262,11 @@ def report_pdf(request, visit_id):
 
     Faculty had no per-row download at all, so a broken bulk export left no way to
     get a letter (#13). Scoped like the bulk path -- courses this user actively
-    administers -- and 404s rather than 403s so it does not confirm the visit exists.
+    administers in a class-visit role, narrowed by any instructor assignments
+    (#8) -- and 404s rather than 403s so it does not confirm the visit exists.
     """
-    course_ids = CourseAdministrator.objects.filter(
-        user=request.user, status__iexact='active'
-    ).values_list('course__id', flat=True)
-
     visit = VisitSchedule.objects.filter(
-        pk=visit_id, class_sections__course__id__in=course_ids,
+        pk=visit_id, class_sections__in=scoped_sections(request.user),
     ).distinct().first()
     if visit is None or not visit.has_report():
         raise Http404('No visit report matches the given query.')
@@ -306,13 +303,10 @@ def do_bulk_action(request):
         # returned "No reports found." for every selection (#13). CE does the same
         # mapping in views/ce.py.
         #
-        # Scope to courses this faculty user administers (security), unchanged.
-        course_ids = CourseAdministrator.objects.filter(
-            user=request.user, status__iexact='active'
-        ).values_list('course__id', flat=True)
+        # Scope to sections this faculty user may see (security; #8).
         visits = VisitSchedule.objects.filter(
             pk__in=raw_ids,
-            class_sections__course__id__in=course_ids,
+            class_sections__in=scoped_sections(request.user),
         ).distinct()
         # A schedule has zero or one report (OneToOneField): skip the ones with
         # none rather than failing the whole batch.
@@ -354,17 +348,11 @@ def index(request):
     # the faculty menu (not the default 'ce' menu) is rendered.
     menu = draw_menu(None, 'class_visits', '', 'faculty')
 
-    course_ids = CourseAdministrator.objects.filter(
-        user=request.user,
-        status__iexact='active',
-    ).values_list('course__id', flat=True)
+    course_ids = scoped_course_ids(request.user)
 
     terms = Term.objects.all().order_by('-code')
     courses = Course.objects.filter(id__in=course_ids).order_by('name')
-    visitors = CourseAdministrator.objects.filter(
-        course__id__in=course_ids,
-        status__iexact='active',
-    ).select_related('user').order_by('user__last_name')
+    visitors = class_visit_administrators(course_ids).select_related('user').order_by('user__last_name')
 
     return render(request, 'class_visit/faculty/visits.html', {
         'menu': menu,

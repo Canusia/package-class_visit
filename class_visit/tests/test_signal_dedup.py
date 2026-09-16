@@ -144,7 +144,7 @@ def _faculty_form_save_with_mocks(settings_dict, is_new=True):
     ) as MockCS, patch(
         f'{PKG}.forms.faculty.CustomUser'
     ) as MockUser, patch(
-        f'{PKG}.forms.faculty.CourseAdministrator'
+        f'{PKG}.forms.faculty.class_visit_administrators'
     ) as MockCA, patch(
         f'{PKG}.forms.faculty.NotNeededVisit'
     ) as MockNNV, patch(
@@ -156,7 +156,7 @@ def _faculty_form_save_with_mocks(settings_dict, is_new=True):
         MockCS.objects.filter.return_value = MagicMock()  # for the set() call
         MockUser.objects.filter.return_value = MagicMock()
         MockNNV.objects.filter.return_value.values_list.return_value = []
-        MockCA.objects.filter.return_value = []
+        MockCA.return_value = []
         MockVS.sections_share_teacher.return_value = True
         MockVS.return_value = mock_visit
         MockVS.objects.filter.return_value = MagicMock()

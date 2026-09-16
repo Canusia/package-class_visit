@@ -4,12 +4,14 @@ from django.core.exceptions import ValidationError
 from django.utils.safestring import mark_safe
 
 from cis.models.section import ClassSection
-from cis.models.course import CourseAdministrator
 from cis.models.customuser import CustomUser
 
 from ..models import VisitSchedule, VisitReport, NotNeededVisit
 from ..settings.class_visit import class_visit as ClassVisitSettings
 from ..services import report_fields
+from ..services.scope import (
+    class_visit_administrators, scoped_course_ids, scoped_sections,
+)
 from ..services.section_scope import status_filter_to_db as _status_filter_to_db
 
 
@@ -81,16 +83,11 @@ class VisitScheduleForm(forms.Form):
         allowed_status_codes = _status_filter_to_db(
             self._settings.get('section_status_filter', 'active')
         )
-        # Build course_ids from active CourseAdministrators.
-        active_cas = list(CourseAdministrator.objects.filter(
-            user=faculty_user,
-            status__iexact='active',
-        ))
-        course_ids = [ca.course_id for ca in active_cas if ca.course_id is not None]
+        # Sections this user may see, by role and instructor assignment (#8).
+        course_ids = list(scoped_course_ids(faculty_user))
 
         # Sections: use select_related for production efficiency.
-        sections_qs = ClassSection.objects.filter(
-            course__id__in=course_ids,
+        sections_qs = scoped_sections(faculty_user).filter(
             status__in=allowed_status_codes,
         ).select_related('teacher__user', 'course', 'term', 'highschool')
 
@@ -124,12 +121,10 @@ class VisitScheduleForm(forms.Form):
                 ))
         self.fields['class_sections'].choices = section_choices
 
-        # Populate visitors: active CourseAdministrators for those courses,
-        # deduped by user (a user may administer multiple of these courses).
-        visitors_qs = CourseAdministrator.objects.filter(
-            course__id__in=course_ids,
-            status__iexact='active',
-        ).select_related('user').order_by('user__last_name', 'user__first_name')
+        # Populate visitors: active class-visit-role CourseAdministrators for those
+        # courses, deduped by user (a user may administer multiple of these courses).
+        visitors_qs = class_visit_administrators(course_ids).select_related(
+            'user').order_by('user__last_name', 'user__first_name')
 
         seen_user_ids = set()
         visitor_choices = []
