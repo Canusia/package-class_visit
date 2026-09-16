@@ -321,8 +321,10 @@ class VisitReportDynamicFormTest(TestCase):
         mock_rf.build_report_form_fields.return_value = {}
         visit = MagicMock()
         form = VisitReportDynamicForm(visit=visit, initial_meta=None)
+        # enforce_required=True: an unbound form keeps the required markers so
+        # the user can see what Submit will demand (#11).
         mock_rf.build_report_form_fields.assert_called_once_with(
-            initial=None, type_of_visit=visit.type_of_visit
+            initial=None, type_of_visit=visit.type_of_visit, enforce_required=True
         )
 
     @patch(f"{PKG}.forms.faculty.report_fields")
@@ -332,5 +334,6 @@ class VisitReportDynamicFormTest(TestCase):
         visit = MagicMock()
         form = VisitReportDynamicForm(visit=visit, initial_meta=existing_meta)
         mock_rf.build_report_form_fields.assert_called_once_with(
-            initial=existing_meta, type_of_visit=visit.type_of_visit
+            initial=existing_meta, type_of_visit=visit.type_of_visit,
+            enforce_required=True
         )

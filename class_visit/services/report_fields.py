@@ -90,13 +90,19 @@ def public_field_names() -> set:
     return {d['name'] for d in get_report_field_defs() if d.get('public')}
 
 
-def build_report_form_fields(initial: dict = None, type_of_visit=None) -> dict:
+def build_report_form_fields(initial: dict = None, type_of_visit=None,
+                             enforce_required: bool = True) -> dict:
     """
     Build a dict of Django form field instances from the stored field definitions.
 
     Args:
         initial: optional dict of initial values keyed by field name.
         type_of_visit: optional visit type used to filter which field defs apply.
+        enforce_required: when False, every field is built optional. "Save as
+            Draft" must be able to store a partial report, and validation runs
+            before the view knows the intent, so the relaxation has to happen
+            here rather than at the call site (#11). Submitting always passes
+            True, which is what keeps "Submitted means complete" true.
 
     Returns:
         dict mapping field_name -> Django form field instance.
@@ -107,7 +113,7 @@ def build_report_form_fields(initial: dict = None, type_of_visit=None) -> dict:
     for defn in get_report_field_defs(type_of_visit):
         name = defn.get('name', '')
         label = defn.get('label', name)
-        required = bool(defn.get('required', False))
+        required = bool(defn.get('required', False)) and enforce_required
         field_type = defn.get('type', 'text')
         options = defn.get('options', [])
         initial_value = initial.get(name)

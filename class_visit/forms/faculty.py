@@ -281,10 +281,18 @@ class VisitReportDynamicForm(forms.Form):
         super().__init__(*args, **kwargs)
         self._visit = visit
 
+        # Required flags apply only when the intent is to submit: validation runs
+        # before the view branches on the action, so a draft would otherwise be
+        # rejected for the very fields it is meant to leave blank (#11). An
+        # unbound form (GET) keeps them, so the user sees what Submit will demand.
+        submit_action = (self.data.get('submit_action') or '').lower() if self.is_bound \
+            else 'submit'
+
         # Inject dynamic fields from the report_fields service
         dynamic_fields = report_fields.build_report_form_fields(
             initial=initial_meta,
             type_of_visit=getattr(visit, 'type_of_visit', None),
+            enforce_required=(submit_action == 'submit'),
         )
         for field_name, field_obj in dynamic_fields.items():
             self.fields[field_name] = field_obj
