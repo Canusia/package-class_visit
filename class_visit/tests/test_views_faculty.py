@@ -172,85 +172,15 @@ class ReportSubmitNotifyTest(TestCase):
         mock_form_instance.save.assert_called_once()
 
 
-class BulkPdfActionTest(TestCase):
-    """do_bulk_action returns application/pdf for action=export_pdf (single combined PDF)."""
-
-    @patch(f'{PKG}.views.faculty.pdf_service')
-    @patch(f'{PKG}.views.faculty.VisitReport')
-    @patch(f'{PKG}.views.faculty.CourseAdministrator')
-    def test_bulk_export_returns_pdf_content_type(self, MockCA, MockVR, MockPDF):
-        # visit_letters_pdf is the shared helper — single call, returns bytes
-        MockPDF.visit_letters_pdf.return_value = b'%PDF-1.4 fake'
-
-        course_id = uuid.uuid4()
-        MockCA.objects.filter.return_value.values_list.return_value = [course_id]
-
-        visit_report_id = str(uuid.uuid4())
-        mock_report = MagicMock()
-        MockVR.objects.filter.return_value.distinct.return_value = [mock_report]
-
-        from django.test import RequestFactory
-        factory = RequestFactory()
-        request = factory.post(
-            '/fake/',
-            {
-                'action': 'export_pdf',
-                'ids[]': [visit_report_id],
-                'public_only': '0',
-            },
-        )
-        request.user = MagicMock()
-
-        from ..views.faculty import do_bulk_action
-        response = do_bulk_action(request)
-
-        self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.get('Content-Type', ''), 'application/pdf')
-        # Must use the combined helper, not the single-report function
-        MockPDF.visit_letters_pdf.assert_called_once_with([mock_report], public_only=False)
-
-    @patch(f'{PKG}.views.faculty.pdf_service')
-    @patch(f'{PKG}.views.faculty.VisitReport')
-    @patch(f'{PKG}.views.faculty.CourseAdministrator')
-    def test_bulk_export_excludes_unauthorized_report(self, MockCA, MockVR, MockPDF):
-        """Faculty A cannot export a report whose course Faculty A does not administer."""
-        MockPDF.visit_letters_pdf.return_value = b'%PDF-1.4 fake'
-
-        # Faculty A only administers course_a
-        course_a_id = uuid.uuid4()
-        MockCA.objects.filter.return_value.values_list.return_value = [course_a_id]
-
-        # authorized_report belongs to a section in course_a (returned by scoped filter)
-        authorized_report = MagicMock()
-        # unauthorized_report_id belongs to a different faculty user's course — NOT returned
-        unauthorized_report_id = str(uuid.uuid4())
-        authorized_report_id = str(uuid.uuid4())
-
-        # The scoped VisitReport.objects.filter(...).distinct() returns only the authorized report
-        MockVR.objects.filter.return_value.distinct.return_value = [authorized_report]
-
-        from django.test import RequestFactory
-        factory = RequestFactory()
-        request = factory.post(
-            '/fake/',
-            {
-                'action': 'export_pdf',
-                'ids[]': [authorized_report_id, unauthorized_report_id],
-                'public_only': '0',
-            },
-        )
-        request.user = MagicMock()
-
-        from ..views.faculty import do_bulk_action
-        response = do_bulk_action(request)
-
-        self.assertEqual(response.status_code, 200)
-        # pdf_service must be called with only the authorized report
-        call_args = MockPDF.visit_letters_pdf.call_args
-        reports_passed = call_args[0][0]
-        self.assertIn(authorized_report, reports_passed)
-        self.assertEqual(len(reports_passed), 1,
-            'Only the report scoped to the faculty user\'s courses should be exported')
+# BulkPdfActionTest lived here. It patched VisitReport and stubbed
+# objects.filter().distinct(), so it asserted 200 + application/pdf against code
+# that could never work: the page posts VisitSchedule ids and the view filtered
+# VisitReport pks with them, matching nothing in a real database (#13). With the
+# ORM mocked the id-type mismatch was invisible, and its own fixture called the
+# posted id `visit_report_id`, baking in the wrong assumption.
+#
+# Replaced by tests/test_faculty_letter_download.py, which exercises the same two
+# cases (content type, unauthorized report excluded) against real rows.
 
 
 class ManageVisitDatepickerTest(TestCase):

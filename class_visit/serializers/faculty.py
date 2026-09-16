@@ -141,6 +141,15 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
             kwargs={'visit_id': obj.id},
         )
 
+    report_pdf_url = serializers.SerializerMethodField()
+
+    def get_report_pdf_url(self, obj):
+        """Per-row letter download; only meaningful once a report exists (#13)."""
+        return reverse(
+            'faculty_class_visit:report_pdf',
+            kwargs={'visit_id': obj.id},
+        )
+
     delete_url = serializers.SerializerMethodField()
 
     def get_delete_url(self, obj):
@@ -165,5 +174,6 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
             'payment_status',
             'manage_visit_url',
             'edit_report_url',
+            'report_pdf_url',
             'delete_url',
         ]

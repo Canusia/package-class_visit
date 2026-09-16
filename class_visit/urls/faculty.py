@@ -15,6 +15,7 @@ from ..views.faculty import (
     index,
     manage_visit,
     edit_visit_report,
+    report_pdf,
     delete_visit,
     do_bulk_action,
 )
@@ -51,6 +52,11 @@ urlpatterns = [
         'visits/delete/<uuid:visit_id>/',
         _guard(delete_visit),
         name='delete_visit',
+    ),
+    path(
+        'visits/<uuid:visit_id>/pdf/',
+        _guard(report_pdf),
+        name='report_pdf',
     ),
     path(
         'visits/bulk_action/',

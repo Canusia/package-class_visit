@@ -239,6 +239,11 @@
               html += '<a href="#" class="btn btn-info ajax-open-modal" data-src="'
                 + row.edit_report_url + '">' + label + '</a>';
 
+              if (row.has_started_report === 'True') {
+                html += '<a href="' + row.report_pdf_url + '" class="btn btn-secondary" '
+                  + 'title="Download this visit letter"><i class="fas fa-file-pdf"></i></a>';
+              }
+
               if (label === 'Add Report') {
                 html += '<div class="btn-group" role="group">'
                   + '<button type="button" class="btn btn-primary btn-sm dropdown-toggle" data-toggle="dropdown">Edit Visit</button>'

@@ -3,6 +3,7 @@ import logging
 
 from django.contrib.auth.decorators import login_required
 from django.http import Http404, HttpResponse, JsonResponse
+from django.utils.http import content_disposition_header
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.clickjacking import xframe_options_exempt
 from django.views.decorators.http import require_POST
@@ -256,6 +257,31 @@ def edit_visit_report(request, visit_id):
 
 
 @login_required(login_url='/')
+def report_pdf(request, visit_id):
+    """Download one visit's letter.
+
+    Faculty had no per-row download at all, so a broken bulk export left no way to
+    get a letter (#13). Scoped like the bulk path -- courses this user actively
+    administers -- and 404s rather than 403s so it does not confirm the visit exists.
+    """
+    course_ids = CourseAdministrator.objects.filter(
+        user=request.user, status__iexact='active'
+    ).values_list('course__id', flat=True)
+
+    visit = VisitSchedule.objects.filter(
+        pk=visit_id, class_sections__course__id__in=course_ids,
+    ).distinct().first()
+    if visit is None or not visit.has_report():
+        raise Http404('No visit report matches the given query.')
+
+    pdf_bytes = pdf_service.visit_letter_pdf(visit.report, public_only=False)
+    response = HttpResponse(pdf_bytes, content_type='application/pdf')
+    response['Content-Disposition'] = content_disposition_header(
+        True, f'visit-letter-{visit.id}.pdf')
+    return response
+
+
+@login_required(login_url='/')
 @require_POST
 def do_bulk_action(request):
     """Dispatch bulk actions on selected VisitReports.
@@ -266,7 +292,7 @@ def do_bulk_action(request):
 
     POST params:
       - action: str
-      - ids[]: list of VisitReport UUIDs
+      - ids[]: list of VisitSchedule UUIDs (what the visits DataTable posts)
       - public_only: '1' for public fields only, '0' for all fields
     """
     action = request.POST.get('action', '')
@@ -274,14 +300,23 @@ def do_bulk_action(request):
     public_only = (request.POST.get('public_only', '0') == '1')
 
     if action == 'export_pdf':
-        # Scope to reports belonging to courses this faculty user administers (security).
+        # The page posts VisitSchedule ids (visits.html's checkbox carries row.id
+        # from the visit_schedule feed), so resolve schedules and take each one's
+        # report -- filtering VisitReport pks with schedule ids matched nothing and
+        # returned "No reports found." for every selection (#13). CE does the same
+        # mapping in views/ce.py.
+        #
+        # Scope to courses this faculty user administers (security), unchanged.
         course_ids = CourseAdministrator.objects.filter(
             user=request.user, status__iexact='active'
         ).values_list('course__id', flat=True)
-        reports = list(VisitReport.objects.filter(
-            id__in=raw_ids,
-            visit_schedule__class_sections__course__id__in=course_ids,
-        ).distinct())
+        visits = VisitSchedule.objects.filter(
+            pk__in=raw_ids,
+            class_sections__course__id__in=course_ids,
+        ).distinct()
+        # A schedule has zero or one report (OneToOneField): skip the ones with
+        # none rather than failing the whole batch.
+        reports = [v.report for v in visits if v.has_report()]
         if not reports:
             return JsonResponse({'success': False, 'message': 'No reports found.'}, status=404)
 
