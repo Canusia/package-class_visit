@@ -204,6 +204,8 @@ ____________________________________
 **6B.3 (If yes)** Message body:
 
 > Available shortcodes: `{{teacher_first_name}}`, `{{teacher_last_name}}`, `{{visit_date}}`, `{{public_report_url}}`
+>
+> `{{public_report_url}}` links the instructor to their own view of the report (public fields only). It requires the recipient to sign in — an instructor who is not signed in lands on the login page and arrives at the report afterwards.
 
 ```
 (write your message here)
@@ -244,6 +246,8 @@ ____________________________________
 **7.4 (If yes)** Reminder message body:
 
 > Available shortcodes: `{{visitor_first_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{report_url}}`
+>
+> `{{report_url}}` links the visitor to the report page for that visit, where they write or review it. It requires the recipient to sign in.
 
 ```
 (write your message here)

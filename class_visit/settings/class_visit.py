@@ -165,7 +165,8 @@ class class_visit(forms.Form):
         label='Teacher Submit Notification Message',
         help_text=(
             'Shortcodes: {{teacher_first_name}}, {{teacher_last_name}}, '
-            '{{visit_date}}, {{public_report_url}}'
+            '{{visit_date}}, {{public_report_url}} '
+            '(links to the instructor portal; the recipient must sign in)'
         ),
     )
 
@@ -182,7 +183,8 @@ class class_visit(forms.Form):
         label='Visitor Reminder Email Message',
         help_text=(
             'Shortcodes: {{visitor_first_name}}, {{visit_date}}, '
-            '{{class_sections}}, {{report_url}}'
+            '{{class_sections}}, {{report_url}} '
+            '(links to the faculty report page; the recipient must sign in)'
         ),
     )
 
@@ -221,7 +223,8 @@ class class_visit(forms.Form):
         label='Visitor Paid Email Message',
         help_text=(
             'Shortcodes: {{visitor_first_name}}, {{visit_date}}, '
-            '{{class_sections}}, {{report_url}}'
+            '{{class_sections}}, {{report_url}} '
+            '(links to the faculty report page; the recipient must sign in)'
         ),
     )
 

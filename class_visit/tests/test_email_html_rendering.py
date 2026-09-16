@@ -9,6 +9,7 @@ reached recipients as `&lt;p&gt;…&lt;br&gt;` and the email read as plain text.
 The fix returns SafeString from those properties via `format_html`, which escapes
 the interpolated DB values but keeps the markup intact.
 """
+import uuid
 from unittest.mock import MagicMock, PropertyMock, patch
 
 from django.test import TestCase
@@ -164,6 +165,8 @@ class EmailBodyRenderingTest(TestCase):
         visitor.email = 'john@example.com'
 
         vs = MagicMock()
+        # Real UUID: the report-link shortcodes reverse() this id (#4).
+        vs.id = uuid.uuid4()
         vs.visit_date_sexy = '01/15/2027'
         vs.class_sections_sexy = sections_html
         vs.visitors.all.return_value = [visitor]

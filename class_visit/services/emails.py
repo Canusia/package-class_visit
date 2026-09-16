@@ -7,8 +7,10 @@ and renders the cis/email.html wrapper template.
 import datetime
 
 from django.conf import settings
+from django.contrib.sites.models import Site
 from django.template.loader import render_to_string
 from django.template import Context, Template
+from django.urls import reverse
 from django.utils.html import strip_tags
 
 from mailer import send_html_mail
@@ -26,6 +28,33 @@ def render_template(text: str, ctx: dict) -> str:
     Missing variables render as empty string (Django default).
     """
     return Template(text).render(Context(ctx))
+
+
+def _absolute_url(url_name: str, **kwargs) -> str:
+    """Absolute URL for an email body.
+
+    Emails have no request, so the domain comes from django.contrib.sites --
+    the same way services/confirmation.py builds the confirmation link.
+
+    Both report links require login: they point at the existing per-portal
+    pages, so a recipient who is not signed in lands on the login page and
+    arrives after signing in (#4). There is deliberately no tokenized public
+    report view.
+    """
+    site = Site.objects.get_current()
+    return f'https://{site.domain}{reverse(url_name, kwargs=kwargs)}'
+
+
+def instructor_report_url(visit_schedule) -> str:
+    """The instructor's own view of their visit report (public fields only)."""
+    return _absolute_url('instructor_class_visit:report_detail',
+                         visit_id=visit_schedule.id)
+
+
+def visitor_report_url(visit_schedule) -> str:
+    """Where a visitor writes or reviews the report for a visit."""
+    return _absolute_url('faculty_class_visit:edit_visit_report',
+                         visit_id=visit_schedule.id)
 
 
 def send_app_email(subject: str, message_text: str, recipients: list) -> None:
@@ -133,7 +162,7 @@ def notify_teacher_report_submitted(visit_report) -> None:
         'teacher_first_name': teacher.user.first_name,
         'teacher_last_name': teacher.user.last_name,
         'visit_date': visit_schedule.visit_date_sexy,
-        'public_report_url': '',  # Plans 2/4 will populate this via a view URL
+        'public_report_url': instructor_report_url(visit_schedule),
     }
 
     subject = cfg.get('teacher_submit_subject', '')
@@ -164,6 +193,10 @@ def notify_notification_target(visit_report) -> None:
         'teacher_last_name': teacher.user.last_name if teacher else '',
         'visit_date': visit_schedule.visit_date_sexy,
         'class_sections': visit_schedule.class_sections_sexy,
+        # The office copy renders the same body as the instructor's, which
+        # advertises {{public_report_url}} -- without the key it rendered blank
+        # here too (#4). Whether this email should have its own wording is #5.
+        'public_report_url': instructor_report_url(visit_schedule),
     }
 
     if notify_target == 'course_administrator':
@@ -209,7 +242,7 @@ def remind_visitor_report_pending(visit_schedule) -> None:
             'visitor_first_name': visitor.first_name,
             'visit_date': visit_schedule.visit_date_sexy,
             'class_sections': visit_schedule.class_sections_sexy,
-            'report_url': '',  # Plans 2/4 will supply this via a view URL
+            'report_url': visitor_report_url(visit_schedule),
         }
         message = render_template(message_template, ctx)
         send_app_email(subject, message, [visitor.email])
@@ -245,7 +278,7 @@ def notify_visitor_payment_processed(visit_report) -> None:
             'visitor_first_name': visitor.first_name,
             'visit_date': visit_schedule.visit_date_sexy,
             'class_sections': visit_schedule.class_sections_sexy,
-            'report_url': '',
+            'report_url': visitor_report_url(visit_schedule),
         }
         message = render_template(message_template, ctx)
         send_app_email(subject, message, [visitor.email])

@@ -1,3 +1,4 @@
+import uuid
 from unittest.mock import patch, MagicMock
 
 from django.test import TestCase
@@ -9,6 +10,9 @@ from ..services import emails
 def _report(first='Ann', email='ann@x.com'):
     visitor = MagicMock(first_name=first, email=email)
     vs = MagicMock()
+    # A real UUID: the report-link shortcodes reverse() this id (#4), and a bare
+    # MagicMock id raises NoReverseMatch.
+    vs.id = uuid.uuid4()
     vs.visitors.all.return_value = [visitor]
     vs.visit_date_sexy = '06/01/2026'
     vs.class_sections_sexy = 'CHEM 101'
