@@ -5,11 +5,29 @@ Field def shape:
     {
       "name": str,           # snake_case field name (used as meta key)
       "label": str,          # human-readable label
-      "type": str,           # one of: text, textarea, select, checkbox, date
+      "type": str,           # text, textarea, select, checkbox, date, heading, rating
       "public": bool,        # whether this field appears in the public report PDF
       "required": bool,
       "options": list[str],  # only used for type=select
+      "help_text": str,      # optional; shown under the input, never in the letter
+      "visit_types": list,   # optional; omit/empty = all visit types
     }
+
+Two types exist only to express a rubric (#6):
+
+- ``heading`` is layout: a section title (plus optional help_text). It produces
+  no form field and no meta key.
+- ``rating`` is a group of criteria scored on one shared ``scale``::
+
+      {"type": "rating", "name": "teaching", "label": "Teaching",
+       "scale": ["Excellent", "Adequate", "Needs Improvement", "N/A"],
+       "criteria": [{"name": "pacing", "label": "Lesson pacing"}, ...]}
+
+  Each criterion is its own input and its own meta key, so stored reports,
+  exports and legacy data need no new shape. The group's ``name`` stores
+  nothing. ``public`` / ``required`` / ``visit_types`` on the group apply to
+  every criterion; a criterion may set its own ``public``, ``required`` or
+  ``help_text``.
 """
 import datetime
 import decimal
@@ -85,9 +103,45 @@ def get_report_field_defs(type_of_visit=None) -> list:
     return defs
 
 
+def input_field_defs(defs) -> list:
+    """Flatten field defs into one def per stored value.
+
+    Headings are dropped (they store nothing) and each rating group becomes one
+    ``rating_criterion`` def per criterion, carrying the group's scale and its
+    inherited ``public`` / ``required``. Anything that reads or writes
+    ``VisitReport.meta`` by field name goes through this, so a heading can never
+    turn into a phantom key and a criterion can never be missed.
+    """
+    flat = []
+    for defn in defs:
+        if not isinstance(defn, dict):
+            continue
+        field_type = defn.get('type', 'text')
+        if field_type == 'heading':
+            continue
+        if field_type != 'rating':
+            flat.append(defn)
+            continue
+        group_label = defn.get('label', defn.get('name', ''))
+        for criterion in defn.get('criteria') or []:
+            if not isinstance(criterion, dict):
+                continue
+            flat.append({
+                'name': criterion.get('name', ''),
+                'label': criterion.get('label', criterion.get('name', '')),
+                'type': 'rating_criterion',
+                'group_label': group_label,
+                'options': list(defn.get('scale') or []),
+                'public': criterion.get('public', defn.get('public', False)),
+                'required': criterion.get('required', defn.get('required', False)),
+                'help_text': criterion.get('help_text', ''),
+            })
+    return flat
+
+
 def public_field_names() -> set:
     """Return the set of field names that are marked public=True."""
-    return {d['name'] for d in get_report_field_defs() if d.get('public')}
+    return {d['name'] for d in input_field_defs(get_report_field_defs()) if d.get('public')}
 
 
 def build_report_form_fields(initial: dict = None, type_of_visit=None,
@@ -110,19 +164,30 @@ def build_report_form_fields(initial: dict = None, type_of_visit=None,
     initial = initial or {}
     field_map = {}
 
-    for defn in get_report_field_defs(type_of_visit):
+    for defn in input_field_defs(get_report_field_defs(type_of_visit)):
         name = defn.get('name', '')
         label = defn.get('label', name)
         required = bool(defn.get('required', False)) and enforce_required
         field_type = defn.get('type', 'text')
         options = defn.get('options', [])
         initial_value = initial.get(name)
+        help_text = defn.get('help_text', '')
 
         if field_type == 'text':
             field = forms.CharField(
                 label=label,
                 required=required,
                 initial=initial_value,
+            )
+        elif field_type == 'rating_criterion':
+            # No blank choice: the radios sit in a grid under the scale, and an
+            # optional ChoiceField already accepts an empty value.
+            field = forms.ChoiceField(
+                label=label,
+                required=required,
+                choices=[(o, o) for o in options],
+                initial=initial_value,
+                widget=forms.RadioSelect,
             )
         elif field_type == 'textarea':
             field = forms.CharField(
@@ -161,32 +226,133 @@ def build_report_form_fields(initial: dict = None, type_of_visit=None,
                 initial=initial_value,
             )
 
+        field.help_text = help_text
         field_map[name] = field
 
     return field_map
 
 
+def form_layout(form, type_of_visit=None) -> list:
+    """The report form in definition order, for templates that render rubrics.
+
+    Each entry is one of:
+      - ``{'kind': 'field', 'field': BoundField}``
+      - ``{'kind': 'heading', 'label', 'help_text'}``
+      - ``{'kind': 'rating', 'label', 'help_text', 'scale',
+           'rows': [{'label', 'help_text', 'field': BoundField}]}``
+
+    Only defs that produced a form field appear, so this can never render an
+    input the form will not accept. The reverse also holds: a form field no def
+    placed (other than hidden ones the template renders itself) is appended as
+    a plain field rather than silently left out of the page.
+    """
+    layout = []
+    for defn in get_report_field_defs(type_of_visit):
+        if not isinstance(defn, dict):
+            continue
+        field_type = defn.get('type', 'text')
+        if field_type == 'heading':
+            layout.append({
+                'kind': 'heading',
+                'label': defn.get('label', ''),
+                'help_text': defn.get('help_text', ''),
+            })
+        elif field_type == 'rating':
+            rows = [
+                {'label': c['label'], 'help_text': c.get('help_text', ''),
+                 'field': form[c['name']]}
+                for c in input_field_defs([defn]) if c['name'] in form.fields
+            ]
+            if rows:
+                layout.append({
+                    'kind': 'rating',
+                    'label': defn.get('label', ''),
+                    'help_text': defn.get('help_text', ''),
+                    'scale': list(defn.get('scale') or []),
+                    'rows': rows,
+                })
+        elif defn.get('name') in form.fields:
+            layout.append({'kind': 'field', 'field': form[defn['name']]})
+
+    placed = {item['field'].name for item in layout if item['kind'] == 'field'}
+    placed.update(row['field'].name for item in layout if item['kind'] == 'rating'
+                  for row in item['rows'])
+    for bound in form.visible_fields():
+        if bound.name not in placed:
+            layout.append({'kind': 'field', 'field': bound})
+    return layout
+
+
 def report_values_for_display(visit_report, public_only: bool = False) -> list:
     """
-    Return a list of {'label': str, 'value': any} dicts for display purposes.
+    Return display entries, in definition order, for letters and report pages.
+
+    A plain field is ``{'label': str, 'value': any}`` -- unchanged, so a tenant
+    with no headings or ratings gets exactly the output it always did. Rubric
+    defs (#6) add a ``kind``:
+
+      - ``{'kind': 'heading', 'label': str}``
+      - ``{'kind': 'rating', 'label': str, 'scale': list,
+           'criteria': [{'label': str, 'value': any}]}``
+
+    ``help_text`` is an instruction to the writer, not part of the record, and
+    never appears here.
 
     Args:
         visit_report: VisitReport instance (meta dict accessed via .meta).
-        public_only: if True, only include fields with public=True.
+        public_only: if True, only include fields with public=True. Headings are
+            not values and always render -- except one that would head nothing.
 
     Returns:
         list of dicts in definition order.
     """
     type_of_visit = getattr(getattr(visit_report, 'visit_schedule', None), 'type_of_visit', None)
     defs = get_report_field_defs(type_of_visit)
+    meta = visit_report.meta or {}
     result = []
     for defn in defs:
+        if not isinstance(defn, dict):
+            continue
+        field_type = defn.get('type')
+        if field_type == 'heading':
+            result.append({'kind': 'heading', 'label': defn.get('label', '')})
+            continue
+        if field_type == 'rating':
+            criteria = [
+                {'label': c['label'], 'value': meta.get(c['name'], '')}
+                for c in input_field_defs([defn])
+                if not public_only or c.get('public')
+            ]
+            if criteria:
+                result.append({
+                    'kind': 'rating',
+                    'label': defn.get('label', ''),
+                    'scale': list(defn.get('scale') or []),
+                    'criteria': criteria,
+                })
+            continue
         if public_only and not defn.get('public'):
             continue
         name = defn.get('name', '')
         label = defn.get('label', name)
-        value = visit_report.meta.get(name, '')
-        if defn.get('type') == 'date':
+        value = meta.get(name, '')
+        if field_type == 'date':
             value = _format_date_for_display(value)
         result.append({'label': label, 'value': value})
-    return result
+    return _drop_empty_headings(result)
+
+
+def _drop_empty_headings(entries: list) -> list:
+    """Remove headings with nothing under them before the next heading or the end.
+
+    Matters for the public letter, where every field under a heading can be
+    non-public; a bare section title would suggest content was lost.
+    """
+    kept = []
+    for i, entry in enumerate(entries):
+        if entry.get('kind') == 'heading':
+            following = entries[i + 1] if i + 1 < len(entries) else None
+            if following is None or following.get('kind') == 'heading':
+                continue
+        kept.append(entry)
+    return kept

@@ -1,0 +1,63 @@
+{% load crispy_forms_tags %}
+{% comment %}
+Report form body, walked in definition order so rubric defs can render (#6):
+headings as section titles, rating groups as one grid (criteria x shared scale).
+Ordinary fields render through crispy exactly as `form|crispy` did.
+Context: form, report_layout (services.report_fields.form_layout). Without
+report_layout the form falls back to plain `form|crispy`.
+{% endcomment %}
+{% if not report_layout %}
+{{ form|crispy }}
+{% else %}
+<style>
+  .cv-rating th, .cv-rating td { vertical-align: middle; }
+  .cv-rating .cv-choice { text-align: center; }
+  @media (max-width: 767.98px) {
+    /* A 12 x 4 grid does not fit a phone: stack each criterion's choices. */
+    .cv-rating thead { display: none; }
+    .cv-rating tr, .cv-rating th, .cv-rating td { display: block; width: 100%; }
+    .cv-rating .cv-choice { text-align: left; border-top: 0; }
+    .cv-rating .cv-choice::after { content: attr(data-label); margin-left: .5rem; }
+  }
+</style>
+{{ form.submit_action }}
+{% for item in report_layout %}
+  {% if item.kind == 'heading' %}
+    <h5 class="mt-4 mb-2 pb-1 border-bottom">{{ item.label }}</h5>
+    {% if item.help_text %}<p class="text-muted small">{{ item.help_text }}</p>{% endif %}
+  {% elif item.kind == 'rating' %}
+    <div class="form-group">
+      <label class="font-weight-bold mb-1">{{ item.label }}</label>
+      {% if item.help_text %}<small class="form-text text-muted mt-0 mb-2">{{ item.help_text }}</small>{% endif %}
+      <table class="table table-sm table-bordered cv-rating">
+        <thead class="thead-light">
+          <tr>
+            <th scope="col">Criterion</th>
+            {% for choice in item.scale %}<th scope="col" class="cv-choice">{{ choice }}</th>{% endfor %}
+          </tr>
+        </thead>
+        <tbody>
+          {% for row in item.rows %}
+            <tr>
+              <th scope="row" class="font-weight-normal">
+                {{ row.label }}{% if row.field.field.required %}<span class="text-danger">*</span>{% endif %}
+                {% if row.help_text %}<small class="d-block text-muted">{{ row.help_text }}</small>{% endif %}
+                {% for error in row.field.errors %}<small class="d-block text-danger">{{ error }}</small>{% endfor %}
+              </th>
+              {% for radio in row.field %}
+                <td class="cv-choice" data-label="{{ radio.choice_label }}">
+                  <input type="radio" name="{{ radio.data.name }}" value="{{ radio.data.value }}"
+                         id="{{ radio.id_for_label }}" aria-label="{{ row.label }}: {{ radio.choice_label }}"
+                         {% if radio.data.selected %}checked{% endif %}>
+                </td>
+              {% endfor %}
+            </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+  {% else %}
+    {{ item.field|as_crispy_field }}
+  {% endif %}
+{% endfor %}
+{% endif %}

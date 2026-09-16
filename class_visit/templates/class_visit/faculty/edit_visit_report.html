@@ -24,7 +24,7 @@
       <div class="card-text">
         <form id="report_form" method="post">
           {% csrf_token %}
-          {{ form|crispy }}
+          {% include "class_visit/faculty/_report_form_fields.html" %}
           <button type="button" class="btn btn-secondary btn-sm" onclick="submitReport('draft')">Save as Draft</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="submitReport('submit')">Submit Report</button>
         </form>

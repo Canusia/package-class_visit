@@ -21,14 +21,23 @@ class class_visit(forms.Form):
           {
             "name": "field_name",
             "label": "Human Label",
-            "type": "text|textarea|select|checkbox|date",
+            "type": "text|textarea|select|checkbox|date|heading|rating",
             "public": true,
             "required": false,
             "options": ["Opt A", "Opt B"],  // for select type only
+            "help_text": "Shown under the input",  // optional, any type
             "visit_types": ["Initial"]     // omit/empty = applies to all visit types
+          },
+          {"type": "heading", "name": "sec_teaching", "label": "Teaching"},
+          {
+            "type": "rating", "name": "teaching", "label": "Teaching",
+            "scale": ["Excellent", "Adequate", "Needs Improvement", "N/A"],
+            "criteria": [{"name": "pacing", "label": "Lesson pacing"}]
           },
           ...
         ]
+
+    See services/report_fields.py for what heading and rating mean (#6).
     """
 
     key = 'class_visit'
@@ -46,7 +55,7 @@ class class_visit(forms.Form):
     ]
 
     # Field types supported by services.report_fields.build_report_form_fields.
-    REPORT_FIELD_TYPES = {'text', 'textarea', 'select', 'checkbox', 'date'}
+    REPORT_FIELD_TYPES = {'text', 'textarea', 'select', 'checkbox', 'date', 'heading', 'rating'}
 
     # ---- General ----
     is_active = forms.ChoiceField(
@@ -81,7 +90,16 @@ class class_visit(forms.Form):
             '{"name":"field_name","label":"Label","type":"text|textarea|select|checkbox|date",'
             '"public":true,"required":false,"options":["A","B"],"visit_types":["Initial"]}. '
             '"options" is only used when type=select. "visit_types" limits the field to those '
-            'Visit Types (omit or leave empty to show for all types).'
+            'Visit Types (omit or leave empty to show for all types). Any field may add '
+            '"help_text", shown under the input but not in the letter. '
+            'Rubrics: {"type":"heading","name":"sec_teaching","label":"Teaching"} is a section '
+            'title that stores nothing; {"type":"rating","name":"teaching","label":"Teaching",'
+            '"scale":["Excellent","Adequate","Needs Improvement","N/A"],"criteria":'
+            '[{"name":"pacing","label":"Lesson pacing"},{"name":"questioning","label":'
+            '"Questioning technique"}]} renders one grid, and each criterion is saved under its '
+            'own "name". "public", "required" and "visit_types" on a rating apply to every '
+            'criterion; a criterion may set its own "public", "required" or "help_text". '
+            'Names must be unique across all fields and criteria.'
         ),
     )
 
@@ -410,6 +428,11 @@ class class_visit(forms.Form):
                         f'Field "{name}": type "select" requires a non-empty "options" list.'
                     )
 
+            self._check_help_text(defn, f'Field "{name}"')
+
+            if field_type == 'rating':
+                self._check_rating(defn, name, seen_names)
+
             visit_types = defn.get('visit_types')
             if visit_types is not None:
                 if not isinstance(visit_types, list) or not all(
@@ -428,6 +451,65 @@ class class_visit(forms.Form):
                         )
 
         return raw
+
+    @staticmethod
+    def _check_help_text(defn, where):
+        help_text = defn.get('help_text')
+        if help_text is not None and not isinstance(help_text, str):
+            raise forms.ValidationError(f'{where}: "help_text" must be a string.')
+
+    def _check_rating(self, defn, name, seen_names):
+        """A rating group: a shared scale, and criteria that are fields in their own right.
+
+        Criterion names join `seen_names` because each one is a meta key -- a
+        criterion colliding with any other field would silently share its value.
+        """
+        if 'options' in defn:
+            raise forms.ValidationError(
+                f'Field "{name}": type "rating" uses "scale", not "options".'
+            )
+
+        scale = defn.get('scale')
+        if (
+            not isinstance(scale, list) or not scale
+            or not all(isinstance(v, str) and v.strip() for v in scale)
+        ):
+            raise forms.ValidationError(
+                f'Field "{name}": type "rating" requires "scale", a non-empty list of '
+                f'non-empty strings.'
+            )
+        if len(set(scale)) != len(scale):
+            raise forms.ValidationError(
+                f'Field "{name}": "scale" contains duplicate values.'
+            )
+
+        criteria = defn.get('criteria')
+        if not isinstance(criteria, list) or not criteria:
+            raise forms.ValidationError(
+                f'Field "{name}": type "rating" requires a non-empty "criteria" list.'
+            )
+        for j, criterion in enumerate(criteria, start=1):
+            if not isinstance(criterion, dict):
+                raise forms.ValidationError(
+                    f'Field "{name}", criterion #{j}: each criterion must be a JSON object.'
+                )
+            c_name = criterion.get('name')
+            if not c_name or not isinstance(c_name, str):
+                raise forms.ValidationError(
+                    f'Field "{name}", criterion #{j}: "name" is required and must be a '
+                    f'non-empty string.'
+                )
+            if c_name in seen_names:
+                raise forms.ValidationError(
+                    f'Duplicate field name "{c_name}" (criterion of "{name}"). Every field '
+                    f'and criterion needs a unique "name".'
+                )
+            seen_names.add(c_name)
+            if not criterion.get('label') or not isinstance(criterion.get('label'), str):
+                raise forms.ValidationError(
+                    f'Criterion "{c_name}": "label" is required and must be a string.'
+                )
+            self._check_help_text(criterion, f'Criterion "{c_name}"')
 
     @classmethod
     def from_db(cls):

@@ -249,6 +249,9 @@ def edit_visit_report(request, visit_id):
 
     return render(request, template, {
         'form': form,
+        # Context, not a form attribute: templates look up form['name'] first, so
+        # an attribute would be shadowed by a report field of the same name (#6).
+        'report_layout': report_fields.form_layout(form, visit.type_of_visit),
         'visit': visit,
         'existing_report': existing_report,
         'field_defs': field_defs,

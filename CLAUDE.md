@@ -98,6 +98,10 @@ Notes on recent additions:
 - **`report_fields_json` is validated on save** (`settings/class_visit.py::clean_report_fields_json`) —
   malformed JSON, bad `type`, duplicate `name`, `select` without `options`, and `visit_types`
   values not in the configured Visit Types are rejected instead of silently storing empty config.
+- **Rubric defs (#6)**: `heading` (layout only) and `rating` (criteria on a shared `scale`, one meta
+  key per criterion), plus `help_text` on any def. Anything reading/writing `meta` by field name
+  must go through `report_fields.input_field_defs()`; display rows for headings/ratings carry a
+  `kind`, plain rows keep the old `{label, value}` shape.
 - Each report-field def may carry **`"visit_types": [...]`** to show only for those visit types
   (empty/absent = all); filtering lives in `services/report_fields.py` (`get_report_field_defs(type_of_visit=…)`).
 - **Payment tracking** (`payment_tracking`): when Yes, the CE visits page (`views/ce.py::do_bulk_action`,

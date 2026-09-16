@@ -70,8 +70,15 @@ Context: visit, report, report_fields, can_download, pdf_url, ajax
     {% if report_fields %}
       <dl class="row">
         {% for field in report_fields %}
-          <dt class="col-sm-3">{{ field.label }}</dt>
-          <dd class="col-sm-9">{{ field.value|safe }}</dd>
+          {% if field.kind == 'heading' %}
+            <dt class="col-12 mt-3 pb-1 mb-2 border-bottom">{{ field.label }}</dt>
+          {% elif field.kind == 'rating' %}
+            <dt class="col-sm-3">{{ field.label }}</dt>
+            <dd class="col-sm-9">{% include "class_visit/_rating_display.html" with rating=field %}</dd>
+          {% else %}
+            <dt class="col-sm-3">{{ field.label }}</dt>
+            <dd class="col-sm-9">{{ field.value|safe }}</dd>
+          {% endif %}
         {% endfor %}
       </dl>
     {% else %}

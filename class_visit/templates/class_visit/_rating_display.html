@@ -1,0 +1,14 @@
+{% comment %}
+One rating group (#6) on a report page: criterion and its chosen value.
+Context: rating = {'label', 'scale', 'criteria': [{'label', 'value'}]}.
+{% endcomment %}
+<table class="table table-sm table-bordered mb-0">
+  <tbody>
+    {% for criterion in rating.criteria %}
+      <tr>
+        <td>{{ criterion.label }}</td>
+        <td class="w-25">{{ criterion.value|default:"—" }}</td>
+      </tr>
+    {% endfor %}
+  </tbody>
+</table>

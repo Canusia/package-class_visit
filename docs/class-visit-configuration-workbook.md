@@ -136,6 +136,17 @@ A report is saved as a **Draft** while in progress and becomes **Submitted** whe
 | | |
 | | |
 
+**4.1b** Is your report a **rubric** — a list of criteria each scored on the same scale (e.g. *Excellent / Adequate / Needs Improvement / N/A*)? If so, the criteria are shown as one grid rather than a dropdown each, and can be grouped under section headings. Any field or criterion can also carry a short instruction shown to the visitor while writing (it does not appear on the letter).
+
+Rating scale (shared by every criterion in a group): ____________________________________
+
+| Section heading | Criterion | Required? | Public to instructor? | Instruction for the visitor (optional) |
+| :-- | :-- | :-: | :-: | :-- |
+| *e.g. Instruction* | *Lesson pacing* | *Yes* | *Yes* | *Is class time used well?* |
+| | | | | |
+| | | | | |
+| | | | | |
+
 **4.2** Should the visitor record who they spoke with during the visit (instructor, school administrators)? If so, what should be captured?
 
 ____________________________________

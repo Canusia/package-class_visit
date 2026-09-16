@@ -308,8 +308,9 @@ class VisitReportDynamicForm(forms.Form):
         )
 
         # Write dynamic field values into meta
-        for field_defn in report_fields.get_report_field_defs():
-            name = field_defn.get('name', '') if isinstance(field_defn, dict) else field_defn
+        # input_field_defs: headings store nothing, rating criteria store one key each (#6).
+        for field_defn in report_fields.input_field_defs(report_fields.get_report_field_defs()):
+            name = field_defn.get('name', '')
             if name in data:
                 # meta is a JSONField with the stock encoder — a date field's
                 # cleaned value is a datetime.date and would break save()

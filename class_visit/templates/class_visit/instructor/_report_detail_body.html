@@ -72,10 +72,21 @@ Context: visit, public_values, can_download, pdf_url, ajax
       <table class="table table-striped">
         <tbody>
           {% for item in public_values %}
+          {% if item.kind == 'heading' %}
+          <tr class="table-secondary">
+            <th colspan="2">{{ item.label }}</th>
+          </tr>
+          {% elif item.kind == 'rating' %}
+          <tr>
+            <th class="w-25">{{ item.label }}</th>
+            <td>{% include "class_visit/_rating_display.html" with rating=item %}</td>
+          </tr>
+          {% else %}
           <tr>
             <th class="w-25">{{ item.label }}</th>
             <td>{{ item.value|safe }}</td>
           </tr>
+          {% endif %}
           {% endfor %}
         </tbody>
       </table>

@@ -11,7 +11,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
 from cis.models.term import Term
-from ..services.report_fields import get_report_field_defs
+from ..services.report_fields import get_report_field_defs, input_field_defs
 
 
 class visit_reports(forms.Form):
@@ -46,12 +46,19 @@ class visit_reports(forms.Form):
     # ------------------------------------------------------------------
 
     def _field_defs(self):
-        return get_report_field_defs()
+        # One column per stored value: no heading columns, one per rating criterion (#6).
+        return input_field_defs(get_report_field_defs())
+
+    @staticmethod
+    def _header(fd):
+        if fd.get('type') == 'rating_criterion' and fd.get('group_label'):
+            return f"{fd['group_label']}: {fd['label']}"
+        return fd['label']
 
     def _headers(self):
         static = ['Visit Date', 'Type of Visit', 'Sections (CRN)', 'Teacher', 'Report Status']
         # Support both 'name' (real service) and 'key' (legacy/test mocks) as the field key
-        dynamic = [fd['label'] for fd in self._field_defs()]
+        dynamic = [self._header(fd) for fd in self._field_defs()]
         return static + dynamic
 
     def _row(self, report):

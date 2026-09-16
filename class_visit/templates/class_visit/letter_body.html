@@ -22,10 +22,33 @@
 
 <table style="width:100%;border-collapse:collapse;">
   {% for row in rows %}
+  {% if row.kind == 'heading' %}
+  <tr>
+    <th colspan="2" style="text-align:left;padding:6px 8px;border:1px solid #ccc;background:#eee;">{{ row.label }}</th>
+  </tr>
+  {% elif row.kind == 'rating' %}
+  <tr>
+    <td colspan="2" style="padding:0;border:1px solid #ccc;">
+      <table style="width:100%;border-collapse:collapse;">
+        <tr>
+          <th style="width:30%;text-align:left;padding:4px 8px;border:1px solid #ccc;">{{ row.label }}</th>
+          {% for choice in row.scale %}<th style="text-align:center;padding:4px 8px;border:1px solid #ccc;">{{ choice }}</th>{% endfor %}
+        </tr>
+        {% for criterion in row.criteria %}
+        <tr>
+          <td style="text-align:left;padding:4px 8px;border:1px solid #ccc;">{{ criterion.label }}{% if criterion.value and criterion.value not in row.scale %} ({{ criterion.value }}){% endif %}</td>
+          {% for choice in row.scale %}<td style="text-align:center;padding:4px 8px;border:1px solid #ccc;">{% if criterion.value == choice %}<strong>X</strong>{% endif %}</td>{% endfor %}
+        </tr>
+        {% endfor %}
+      </table>
+    </td>
+  </tr>
+  {% else %}
   <tr>
     <th style="width:30%;text-align:left;vertical-align:top;padding:4px 8px;border:1px solid #ccc;">{{ row.label }}</th>
     <td style="padding:4px 8px;border:1px solid #ccc;">{{ row.value|safe }}</td>
   </tr>
+  {% endif %}
   {% endfor %}
 </table>
 
