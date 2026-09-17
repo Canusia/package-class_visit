@@ -20,7 +20,7 @@ Each role has its own DRF router under `…/api/` (DataTables server-side). Mode
 
 ## Requirements
 
-A MyCE tenant providing the host `cis` app plus: `setting`, `report`, `django-mailer`, `djangorestframework`, `rest_framework_datatables`, and `pdfkit` (with the `wkhtmltopdf` binary, for PDF letters). Python ≥ 3.8, Django ≥ 3.2.
+A MyCE tenant providing the host `cis` app plus: `setting`, `report`, `django-mailer`, `djangorestframework`, `rest_framework_datatables`, and `pdfkit` (with the `wkhtmltopdf` binary, for PDF letters). Python ≥ 3.8, Django ≥ 3.2. Faculty scoping honours cis's faculty→teacher mapping (`FacultyTeacherAssignment`) when the host `cis` has it (package-cis ≥ v0.0.20); on an older `cis` it falls back to course-only scoping.
 
 ---
 
