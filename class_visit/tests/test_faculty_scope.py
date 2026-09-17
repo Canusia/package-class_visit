@@ -19,16 +19,22 @@ import uuid
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.contrib.auth.signals import user_logged_in
+from unittest import skipIf
+
 from django.test import Client, TestCase
 from django.urls import reverse
 
 from cis.models.course import Cohort, Course, CourseAdministrator
-from cis.models.faculty import FacultyTeacherAssignment
 from cis.models.section import ClassSection
 from cis.models.teacher import Teacher
 from cis.models.term import AcademicYear, Term
 
 from ..models import VisitSchedule
+from ..services.scope import FacultyTeacherAssignment
+
+requires_assignment_model = skipIf(
+    FacultyTeacherAssignment is None,
+    'cis has no FacultyTeacherAssignment (package-cis < v0.0.20)')
 
 try:
     from django_login_history.models import post_login as _login_history_post_login
@@ -130,6 +136,7 @@ class FacultyScopeTest(TestCase):
 
     # -- the faculty -> teacher mapping --------------------------------------
 
+    @requires_assignment_model
     def test_unconfigured_tenant_sees_every_teachers_visits(self):
         """The safety property: no FacultyTeacherAssignment rows means exactly the
         old course-only scope -- including teachers with no TeacherCourseCertificate,
@@ -139,6 +146,7 @@ class FacultyScopeTest(TestCase):
         self.assertIn(str(self.visit_a.id), ids)
         self.assertIn(str(self.visit_b.id), ids)
 
+    @requires_assignment_model
     def test_assignments_narrow_to_the_assigned_teachers(self):
         user = self._user_with_role('Dept. Chair')
         FacultyTeacherAssignment.objects.create(
@@ -150,6 +158,7 @@ class FacultyScopeTest(TestCase):
         self.assertIn(str(self.visit_a.id), ids)
         self.assertNotIn(str(self.visit_b.id), ids)
 
+    @requires_assignment_model
     def test_assignments_for_another_year_do_not_narrow_this_one(self):
         user = self._user_with_role('Faculty')
         other_year = AcademicYear.objects.create(name=f'AY-{_sfx()}')
@@ -161,6 +170,7 @@ class FacultyScopeTest(TestCase):
 
         self.assertIn(str(self.visit_b.id), ids)
 
+    @requires_assignment_model
     def test_assignments_narrow_only_their_own_year(self):
         """This year's assignments must not hide last year's visits."""
         user = self._user_with_role('Faculty')
@@ -182,6 +192,7 @@ class FacultyScopeTest(TestCase):
 
     # -- the same rule applies to the other scoping sites --------------------
 
+    @requires_assignment_model
     def test_bulk_export_refuses_a_visit_outside_the_narrowed_scope(self):
         from unittest.mock import patch
 
@@ -205,6 +216,7 @@ class FacultyScopeTest(TestCase):
         self.assertEqual(resp.status_code, 404)
         mock_pdf.assert_not_called()
 
+    @requires_assignment_model
     def test_schedulable_sections_honour_the_mapping(self):
         user = self._user_with_role('Dean')
         FacultyTeacherAssignment.objects.create(
@@ -222,6 +234,7 @@ class FacultyScopeTest(TestCase):
         self.assertIn(str(self.section_a.id), ids)
         self.assertNotIn(str(self.section_b.id), ids)
 
+    @requires_assignment_model
     def test_manage_visit_404s_for_a_section_outside_scope(self):
         user = self._user_with_role('Faculty')
         FacultyTeacherAssignment.objects.create(
