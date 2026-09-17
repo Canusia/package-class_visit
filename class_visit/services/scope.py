@@ -25,12 +25,22 @@ deliberately not through ``cis.services.faculty_scope.visible_teachers``:
 So: a section is in scope if its course is, and either no assignment rows exist
 for (user, course, section's year) or the section's teacher is assigned. With
 no rows configured that is exactly the old course-only behaviour.
+
+On a cis without FacultyTeacherAssignment (package-cis < v0.0.20) the mapping does not
+exist, so the second rule is skipped and scoping is course-only.
 """
 from django.db.models import Exists, OuterRef
 
 from cis.models.course import CourseAdministrator
-from cis.models.faculty import FacultyTeacherAssignment
 from cis.models.section import ClassSection
+
+try:
+    from cis.models.faculty import FacultyTeacherAssignment
+except ImportError:
+    # package-cis < v0.0.20 (or an in-tree cis that predates migration 0078) has no
+    # faculty->teacher mapping; scoping is then course-only, same as a tenant that
+    # configured no assignment rows.
+    FacultyTeacherAssignment = None
 
 #: CourseAdministrator roles that take part in class visits.
 CLASS_VISIT_ROLES = ('Faculty', 'Visitor', 'Dept. Chair', 'Dean')
@@ -47,14 +57,16 @@ def scoped_course_ids(user):
 
 def scoped_sections(user):
     """ClassSections this user may see, per role and the faculty->teacher map."""
+    sections = ClassSection.objects.filter(course__id__in=scoped_course_ids(user))
+    if FacultyTeacherAssignment is None:
+        return sections
+
     year_assignments = FacultyTeacherAssignment.objects.filter(
         user=user,
         course_id=OuterRef('course_id'),
         academic_year_id=OuterRef('term__academic_year_id'),
     )
-    return ClassSection.objects.filter(
-        course__id__in=scoped_course_ids(user),
-    ).filter(
+    return sections.filter(
         ~Exists(year_assignments)
         | Exists(year_assignments.filter(teacher_id=OuterRef('teacher_id')))
     )
