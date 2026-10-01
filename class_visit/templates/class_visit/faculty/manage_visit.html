@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
   <title>{{ page_title }}</title>
-  {% load static %}
+  {% load static brand %}
   {% load crispy_forms_tags %}
   <!-- Same CSS the host app loads (cis/base.html) so the form matches the
        app's Bootstrap 4 theme. The previous css/bootstrap.min.css /
@@ -13,6 +13,7 @@
   <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
   <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
   <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% brand_css %}
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/css/bootstrap-datepicker.standalone.min.css" integrity="sha512-hUfBXTL9jLIWwdWjS8Ikr/lG7gnGdYddmW98jevEts6e3fHx4uebRBOafkIO/10SqJgxxCTBxUcVUGY8/hIM2g==" crossorigin="anonymous">
 </head>
 <body class="bg-white">
