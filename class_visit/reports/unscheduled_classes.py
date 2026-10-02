@@ -12,6 +12,7 @@ from crispy_forms.layout import Submit
 
 from cis.models.term import Term
 from cis.models.highschool import HighSchool
+from cis.highschool_scope import scope_highschools
 
 
 class unscheduled_classes(forms.Form):
@@ -43,7 +44,11 @@ class unscheduled_classes(forms.Form):
         self.helper.form_method = 'POST'
         self.helper.add_input(Submit('submit', 'Generate Export'))
         self.fields['term'].queryset = Term.objects.all()
-        self.fields['highschool'].queryset = HighSchool.objects.all()
+        # Every school on this campus (any link status), so the report can
+        # still filter inactive-but-linked schools. Evaluated per request.
+        self.fields['highschool'].queryset = scope_highschools(
+            HighSchool.objects.all(),
+            user=getattr(request, 'user', None))
         if request:
             self.roles = request.user.get_roles()
             self.helper.form_action = reverse_lazy(
