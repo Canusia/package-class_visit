@@ -46,6 +46,10 @@ Context: visit, report, report_fields, can_download, pdf_url, ajax
           &mdash;
         {% endfor %}
       </dd>
+      {% if visit.scheduled_by_display %}
+      <dt class="col-sm-3">Scheduled By</dt>
+      <dd class="col-sm-9">{{ visit.scheduled_by_display }}</dd>
+      {% endif %}
       <dt class="col-sm-3">Visitor(s)</dt>
       <dd class="col-sm-9">
         {% for name in visit.visitor_names %}

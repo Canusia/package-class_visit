@@ -5,10 +5,10 @@ from django.utils.safestring import mark_safe
 
 from cis.models.section import ClassSection
 from cis.models.customuser import CustomUser
-from cis.models.course import CourseAdministrator
 
 from ..models import VisitSchedule
 from ..settings.class_visit import class_visit as ClassVisitSettings
+from ..services.scope import class_visit_administrators
 from ..services.section_scope import not_needed_section_ids, status_filter_to_db
 
 
@@ -139,16 +139,32 @@ class CEVisitScheduleForm(forms.Form):
             self.fields['class_sections'].choices = section_choices
             self.fields['class_sections'].initial = [str(anchor.id)]
 
-            # Visitor choices: active CourseAdministrators for the course
-            admins_qs = CourseAdministrator.objects.filter(
-                course=anchor.course,
-                status__iexact='active',
-            ).select_related('user')
-            admins = list(admins_qs)
-            self.fields['visitors'].choices = [
-                (str(a.user.id), f"{a.user.last_name}, {a.user.first_name}")
-                for a in admins
-            ]
+            # Visitor choices: the same people the faculty form offers -- active
+            # course administrators in a class-visit role (#18). A user with two
+            # qualifying rows (e.g. Faculty + Dept. Chair) is listed once.
+            visitor_choices = []
+            seen = set()
+            for admin in class_visit_administrators([anchor.course_id]).select_related(
+                    'user').order_by('user__last_name', 'user__first_name'):
+                if admin.user_id in seen:
+                    continue
+                seen.add(admin.user_id)
+                visitor_choices.append(
+                    (str(admin.user.id), f"{admin.user.last_name}, {admin.user.first_name}"))
+
+            # Same carve-out as sections: a visitor already on the visit being
+            # edited stays selectable, or saving would silently drop them.
+            if visit_id and str(visit_id) != '-1':
+                existing = VisitSchedule.objects.filter(pk=visit_id).first()
+                if existing:
+                    for user in existing.visitors.order_by('last_name', 'first_name'):
+                        if user.id not in seen:
+                            seen.add(user.id)
+                            visitor_choices.append((
+                                str(user.id),
+                                f"{user.last_name}, {user.first_name} — currently scheduled",
+                            ))
+            self.fields['visitors'].choices = visitor_choices
         else:
             self.fields['class_sections'].choices = []
             self.fields['visitors'].choices = []
@@ -203,6 +219,7 @@ class CEVisitScheduleForm(forms.Form):
         if is_new:
             visit = VisitSchedule()
             visit.meta = {}
+            visit.record_scheduler(getattr(request, 'user', None), 'ce')
             visit.save()
         else:
             visit = VisitSchedule.objects.get(pk=visit_id)

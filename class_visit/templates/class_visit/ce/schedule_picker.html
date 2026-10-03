@@ -1,0 +1,60 @@
+{% extends "cis/logged-base-modal.html" %}
+
+{% block body %}
+<h3 class="mb-1">{{ page_title }}</h3>
+<p class="text-muted small mb-3">
+  Pick the section to visit. You choose the visitor(s) — the course's active faculty and
+  visitors — on the next screen, and the visit is recorded as scheduled by CE.
+</p>
+
+<div class="mb-3">
+  <form id="frm_schedule_picker_filter" class="form-inline" method="get">
+    <select name="term_id" class="form-control mr-2 mb-2">
+      <option value="">All Terms</option>
+      {% for t in terms %}
+        <option value="{{ t.id }}" {% if t.id|stringformat:"s" == term_id %}selected{% endif %}>{{ t.label }} {{ t.year }}</option>
+      {% endfor %}
+    </select>
+    <select name="course_id" class="form-control mr-2 mb-2">
+      <option value="">All Courses</option>
+      {% for c in courses %}
+        <option value="{{ c.id }}" {% if c.id|stringformat:"s" == course_id %}selected{% endif %}>{{ c.name }}</option>
+      {% endfor %}
+    </select>
+    <button type="submit" class="btn btn-sm btn-secondary mb-2">Filter</button>
+  </form>
+</div>
+
+<table class="table table-sm table-hover">
+  <thead>
+    <tr>
+      <th>Course</th>
+      <th>Section</th>
+      <th>Term</th>
+      <th>Instructor</th>
+      <th>High School</th>
+      <th></th>
+    </tr>
+  </thead>
+  <tbody>
+    {% for s in sections %}
+    <tr>
+      <td>{{ s.course.name }}</td>
+      <td>{{ s.class_number }}-{{ s.section_number }}</td>
+      <td>{{ s.term.label }}</td>
+      <td>{{ s.teacher.user.last_name }}, {{ s.teacher.user.first_name }}</td>
+      <td>{{ s.highschool.name }}</td>
+      <td>
+        <a class="btn btn-xs btn-primary"
+           href="{% url 'class_visit:ce_manage_visit' section_id=s.id %}">Schedule</a>
+      </td>
+    </tr>
+    {% empty %}
+    <tr><td colspan="6" class="text-muted">No schedulable sections found.</td></tr>
+    {% endfor %}
+  </tbody>
+</table>
+{% if sections|length == 200 %}
+<p class="text-muted small">Showing the first 200 sections — narrow the filters to find more.</p>
+{% endif %}
+{% endblock %}

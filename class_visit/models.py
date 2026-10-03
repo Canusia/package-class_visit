@@ -77,6 +77,22 @@ class VisitSchedule(models.Model):
             return self.visit_date.strftime("%m/%d/%Y")
         return '-'
 
+    def record_scheduler(self, user, via):
+        """Note who scheduled the visit and from which portal (#18). Create only."""
+        self.meta['scheduled_by_id'] = getattr(user, 'pk', None)
+        self.meta['scheduled_by'] = user.get_full_name() if user else ''
+        self.meta['scheduled_via'] = via
+
+    @property
+    def scheduled_by_display(self):
+        """'Jane Doe (CE)' / 'Jane Doe (Faculty)'; '' for visits scheduled before #18."""
+        meta = self.meta or {}
+        name = meta.get('scheduled_by')
+        if not name:
+            return ''
+        via = {'ce': 'CE', 'faculty': 'Faculty'}.get(meta.get('scheduled_via'), '')
+        return f'{name} ({via})' if via else name
+
     @property
     def visitor_names(self):
         visitors = self.visitors.all()

@@ -21,6 +21,7 @@ from ..views.ce import (
     not_needed_add,
     not_needed_remove,
     not_needed_picker,
+    schedule_picker,
     do_bulk_action,
 )
 
@@ -48,6 +49,11 @@ urlpatterns = [
         'manage/<uuid:section_id>/',
         _ce(manage_visit),
         name='ce_manage_visit',
+    ),
+    path(
+        'schedule/',
+        _ce(schedule_picker),
+        name='ce_schedule_picker',
     ),
     path(
         'edit/<uuid:visit_id>/',

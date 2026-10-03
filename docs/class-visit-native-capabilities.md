@@ -8,7 +8,7 @@ This document outlines the native functionality supported by the Canusia Class V
 
 The module provides a centralized system for scheduling and tracking classroom observation visits to concurrent-enrollment sections. It is designed around the way CE programs actually run site visits — with central oversight, delegated scheduling, and per-course assignment.
 
-- **Flexible Scheduling Roles:** Visits can be scheduled centrally by CE office staff, by faculty course administrators for their own courses, or both.
+- **Flexible Scheduling Roles:** Visits can be scheduled centrally by CE office staff, by faculty course administrators for their own courses, or both. CE staff can schedule on behalf of a section's faculty (**Schedule a Visit** on the CE Class Visits page), picking from the same active faculty / visitors the faculty portal offers; each visit records who scheduled it and from which portal.
 - **Configurable Visit Types:** A program-defined list of visit types (e.g., Initial, Follow-up, Annual) is presented at scheduling time and recorded on each visit.
 - **Multi-Section Visits:** A single visit can cover multiple class sections taught by the same instructor, reflecting real-world site visits that observe several periods in one trip.
 - **Section Eligibility Controls:** The list of schedulable sections is filtered by section status (active, inactive, or all), and individual sections can be flagged as "visit not needed" to keep exempt or alternate-delivery sections off the unscheduled list.

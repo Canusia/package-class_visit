@@ -28,6 +28,13 @@
     <div class="tab-pane active" id="tab-all">
       <div class="bg-white border border-top-0 p-3">
 
+        <div class="mb-2">
+          <a href="#" class="btn btn-sm btn-primary ajax-open-visit"
+             data-src="{% url 'class_visit:ce_schedule_picker' %}">
+            <i class="fas fa-plus"></i>&nbsp;Schedule a Visit
+          </a>
+        </div>
+
         {# Filter bar #}
         <div class="card mb-3">
           <div class="card-body bg-gray-200">

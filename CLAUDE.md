@@ -113,6 +113,11 @@ Notes on recent additions:
   visitor when `notify_visitor_on_paid` = Yes (`services/emails.py::notify_visitor_payment_processed`,
   same shortcodes as the visitor reminder). The payment fields render at the bottom of the settings
   form and toggle their visibility via JS injected through the crispy layout.
+- **Scheduling on behalf (#18)**: CE's **Schedule a Visit** button opens `views/ce.py::schedule_picker`
+  (iframe modal; honours `section_status_filter` and the Not-Needed list), whose rows open
+  `ce_manage_visit`. CE and faculty visitor choices both come from
+  `services/scope.py::class_visit_administrators()` (active, `CLASS_VISIT_ROLES`). On create,
+  `VisitSchedule.record_scheduler(user, 'ce'|'faculty')` writes `meta['scheduled_by_id'|'scheduled_by'|'scheduled_via']`.
 - The CE **View Report** opens the report in the visits-page iframe modal (`?ajax=1` → `cis/ajax-base.html`,
   `@xframe_options_exempt`).
 

@@ -27,6 +27,8 @@ from ..services import pdf as pdf_service
 from ..services import report_fields
 from ..services import emails as email_service
 from ..services.payment import payment_tracking_enabled
+from ..services.section_scope import status_filter_to_db
+from ..settings.class_visit import class_visit as ClassVisitSettings
 
 logger = logging.getLogger(__name__)
 
@@ -358,6 +360,48 @@ def not_needed_picker(request):
         {
             'page_title': 'Add to Not-Needed List',
             'sections': sections,
+            'terms': Term.objects.all().order_by('code'),
+            'courses': Course.objects.filter(status__iexact='active').order_by('name'),
+        },
+    )
+
+
+@login_required(login_url='/')
+@xframe_options_exempt
+def schedule_picker(request):
+    """Iframe modal: pick a section to schedule a visit for, on behalf of its faculty (#18).
+
+    Offers the sections the scheduling form itself would accept: the configured
+    section_status_filter, and nothing on the Not-Needed list. Each row opens
+    ce_manage_visit for that section in the same iframe.
+    """
+    term_id = request.GET.get('term_id')
+    course_id = request.GET.get('course_id')
+    if term_id is None and course_id is None:
+        term = active_term()
+        term_id = str(term.id) if term else ''
+
+    allowed = status_filter_to_db(
+        ClassVisitSettings.from_db().get('section_status_filter', 'active'))
+    sections = ClassSection.objects.filter(
+        status__in=allowed, not_needed_visit__isnull=True,
+    ).select_related('course', 'teacher__user', 'highschool', 'term')
+
+    if term_id:
+        sections = sections.filter(term__id=term_id)
+    if course_id:
+        sections = sections.filter(course__id=course_id)
+
+    sections = sections.order_by('course__name', 'teacher__user__last_name')[:200]
+
+    return render(
+        request,
+        'class_visit/ce/schedule_picker.html',
+        {
+            'page_title': 'Schedule a Visit',
+            'sections': sections,
+            'term_id': term_id or '',
+            'course_id': course_id or '',
             'terms': Term.objects.all().order_by('code'),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),
         },

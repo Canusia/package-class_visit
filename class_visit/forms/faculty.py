@@ -221,6 +221,7 @@ class VisitScheduleForm(forms.Form):
         else:
             visit = VisitSchedule()
             visit.meta = {}
+            visit.record_scheduler(self._faculty_user, 'faculty')
 
         visit.visit_date = data['visit_date']
         visit.type_of_visit = data['type_of_visit']

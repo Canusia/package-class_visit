@@ -45,7 +45,7 @@ class CEVisitScheduleFormTest(TestCase):
         import uuid
 
         with patch(f'{PKG}.forms.ce.ClassSection') as mock_cs, \
-             patch(f'{PKG}.forms.ce.CourseAdministrator') as mock_ca, \
+             patch(f'{PKG}.forms.ce.class_visit_administrators') as mock_admins, \
              patch(f'{PKG}.forms.ce.ClassVisitSettings') as mock_settings:
 
             mock_settings.from_db.return_value = {
@@ -56,10 +56,8 @@ class CEVisitScheduleFormTest(TestCase):
                 teacher=MagicMock(), term=MagicMock(), course=MagicMock()
             )
             mock_cs.objects.filter.return_value = []
-            # Use a chained mock so .select_related('user') returns an iterable
-            mock_qs = MagicMock()
-            mock_qs.select_related.return_value = []
-            mock_ca.objects.filter.return_value = mock_qs
+            # Chained mock so .select_related('user').order_by(...) is iterable
+            mock_admins.return_value.select_related.return_value.order_by.return_value = []
 
             from ..forms.ce import CEVisitScheduleForm
             form = CEVisitScheduleForm(section_id=uuid.uuid4())
