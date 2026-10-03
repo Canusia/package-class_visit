@@ -91,6 +91,7 @@ Context: visit, report, report_fields, can_download, pdf_url, ajax
     {% endif %}
   </div>
 </div>
+{% include "class_visit/_attachments.html" %}
 {% else %}
 <div class="alert alert-info">No report has been submitted for this visit.</div>
 {% endif %}

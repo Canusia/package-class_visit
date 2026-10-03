@@ -97,6 +97,10 @@ Context: visit, public_values, can_download, pdf_url, ajax
       </div>
     {% endif %}
 
+    {% if attachments %}
+      <div class="mt-4">{% include "class_visit/_attachments.html" %}</div>
+    {% endif %}
+
     {% if show_signoff %}
       <div class="card border-top-0 mt-4">
         <div class="card-body">

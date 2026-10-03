@@ -26,6 +26,8 @@ BASE_DATA = {
     'notify_office_on_submit': 'Yes',
     'instructor_signature': 'No',
     'notify_visitor_on_response': 'No',
+    'visitor_file_upload': 'No',
+    'instructor_view_visitor_files': 'No',
     'teacher_submit_subject': '',
     'teacher_submit_message': '',
     'visitor_reminder_subject': '',

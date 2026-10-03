@@ -257,6 +257,28 @@ class class_visit(forms.Form):
         ),
     )
 
+    # ---- Visitor file uploads ----
+    visitor_file_upload = forms.ChoiceField(
+        choices=YES_NO,
+        label='Visitors Can Attach Files to the Report',
+        help_text=(
+            'When Yes, the visit report form lets visitors upload files (photos, signed '
+            'forms, handouts). Up to 10 MB each; PDF, Office, text/CSV and image files. '
+            'CE staff and the visit\'s visitors can always download them.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    instructor_view_visitor_files = forms.ChoiceField(
+        choices=YES_NO,
+        label='Instructor Can Download Visitor Files',
+        help_text=(
+            'When Yes, the instructor sees and can download the visitor\'s files on a '
+            'submitted report. When No, the files are visible to CE and visitors only.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
     # ---- Visitor reminder ----
     visitor_reminder_subject = forms.CharField(
         max_length=500,
@@ -351,12 +373,15 @@ class class_visit(forms.Form):
     set('notify_visitor_on_paid', payOn);
     set('visitor_paid_subject', payOn && notifyOn);
     set('visitor_paid_message', payOn && notifyOn);
+    var up = document.getElementById('id_visitor_file_upload');
+    set('instructor_view_visitor_files', up && up.value === 'Yes');
   };
   if (!window.cvPaymentNotifyBound) {
     window.cvPaymentNotifyBound = true;
     document.addEventListener('change', function (e) {
       if (e.target && (e.target.id === 'id_payment_tracking' ||
-                       e.target.id === 'id_notify_visitor_on_paid')) {
+                       e.target.id === 'id_notify_visitor_on_paid' ||
+                       e.target.id === 'id_visitor_file_upload')) {
         window.cvSyncPaymentNotify();
       }
     });
@@ -547,6 +572,8 @@ class class_visit(forms.Form):
             'notify_office_on_submit': 'Yes',
             # No: an existing tenant sees no change until it opts in.
             'instructor_signature': 'No',
+            'visitor_file_upload': 'No',
+            'instructor_view_visitor_files': 'No',
             'notify_visitor_on_response': 'No',
             'visitor_response_subject': 'Instructor Response to Visit Report',
             'visitor_response_message': '',

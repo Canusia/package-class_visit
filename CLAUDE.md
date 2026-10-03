@@ -80,7 +80,7 @@ is correct regardless of which config is active.
 |-------|-------|
 | `VisitSchedule` | A scheduled visit. M2M `visitors` (CustomUser) + `class_sections` (all must share one teacher). `type_of_visit` from the `visit_types` setting. State lives in `meta` (pre_visit_note, confirmation_token, reminder_last_sent_on, …). |
 | `VisitReport` | One-to-one with a schedule (`related_name='report'`). `status` Draft→Submitted; submit fires notifications. Dynamic report fields stored in `meta`, defined by `report_fields_json`. `payment_processed` flag (only when Submitted). |
-| `VisitReportFile` | Attachments on a report (PrivateMediaStorage). |
+| `VisitReportFile` | Attachments on a report (PrivateMediaStorage). `kind` says who attached it: `faculty_attachment` (visitor, report form) or `instructor_response` (sign-off panel). Never link a raw storage URL — download through the scoped `download_file` views (`services/uploads.py`). |
 | `NotNeededVisit` | Flags a `ClassSection` as exempt so it drops off the unscheduled list. |
 
 ## Configuration surface
@@ -91,6 +91,7 @@ keep that workbook in sync when you add, rename, or remove a setting. Keys:
 `is_active` / `debug_email_list`, `report_fields_json`, `visit_types`, `section_status_filter`,
 `notify_target` / `generic_email`, `notify_teacher_on_schedule` + subject/message,
 `instructor_confirm_link`, `notify_teacher_on_submit` + subject/message,
+`visitor_file_upload` / `instructor_view_visitor_files`,
 `visitor_reminder_subject` / `visitor_reminder_message`, `reminder_every_days`,
 `payment_tracking`, `notify_visitor_on_paid` / `visitor_paid_subject` / `visitor_paid_message`.
 

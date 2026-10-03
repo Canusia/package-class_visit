@@ -22,6 +22,7 @@ from ..views.ce import (
     not_needed_remove,
     not_needed_picker,
     schedule_picker,
+    download_file,
     do_bulk_action,
 )
 
@@ -71,6 +72,11 @@ urlpatterns = [
         'report/<uuid:visit_id>/',
         _ce(view_report),
         name='ce_view_report',
+    ),
+    path(
+        'report/<uuid:visit_id>/files/<uuid:file_id>/',
+        _ce(download_file),
+        name='ce_download_file',
     ),
     path(
         'report/<uuid:visit_id>/pdf/',

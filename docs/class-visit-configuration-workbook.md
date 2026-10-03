@@ -153,9 +153,15 @@ ____________________________________
 
 ____________________________________
 
-**4.3** *Attachments:* visitors cannot attach files (photos, signed forms, handouts) to a report today — describe them in a report field instead. If you need visitor attachments, note it here and we will log it as a feature request.
+**4.3** Do visitors need to **attach files** to a report (photos, signed forms, handouts)? Files are optional on each report, up to 10 MB each (PDF, Word/Excel/PowerPoint, text/CSV, images). Your office staff and the visit's visitors can always download them. (Default: No.)
 
-____________________________________
+- [ ] No — reports are text only
+- [ ] Yes — visitors can attach files
+
+**4.3a** *(only if 4.3 = Yes)* Should the **instructor** be able to see and download the visitor's files on a submitted report? (Default: No — office and visitors only.)
+
+- [ ] No
+- [ ] Yes
 
 ---
 

@@ -8,7 +8,7 @@ from cis.models.customuser import CustomUser
 
 from ..models import VisitSchedule, VisitReport, NotNeededVisit
 from ..settings.class_visit import class_visit as ClassVisitSettings
-from ..services import report_fields
+from ..services import report_fields, uploads
 from ..services.scope import (
     class_visit_administrators, scoped_course_ids, scoped_sections,
 )
@@ -284,6 +284,11 @@ class VisitReportDynamicForm(forms.Form):
         for field_name, field_obj in dynamic_fields.items():
             self.fields[field_name] = field_obj
 
+        # Visitor attachments, when the tenant allows them. Rendered by the page
+        # template, not the report layout, so the report fields stay as configured.
+        if uploads.uploads_enabled():
+            self.fields[uploads.FIELD_NAME] = uploads.build_upload_field()
+
     def save(self, created_by_user, commit=True):
         """Upsert VisitReport; flips status based on submit_action.
 
@@ -323,6 +328,9 @@ class VisitReportDynamicForm(forms.Form):
 
         if commit:
             report.save()
+            new_files = data.get(uploads.FIELD_NAME) or []
+            if new_files:
+                uploads.save_visitor_files(report, new_files, created_by_user)
             # An instructor's attestation refers to a specific version of the
             # report, so re-submitting invalidates it. Their written response is
             # their own words about the visit, not a statement about a version,

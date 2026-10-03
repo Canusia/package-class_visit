@@ -28,6 +28,7 @@ from ..serializers.faculty import (
 )
 from ..services import emails, report_fields
 from ..services import pdf as pdf_service
+from ..services import uploads
 from ..services.payment import payment_tracking_enabled
 from ..services.scope import (
     class_visit_administrators, scoped_course_ids, scoped_sections,
@@ -222,6 +223,7 @@ def edit_visit_report(request, visit_id):
             visit=visit,
             initial_meta=initial_meta,
             data=request.POST,
+            files=request.FILES,
         )
         if form.is_valid():
             report = form.save(created_by_user=request.user)
@@ -230,6 +232,8 @@ def edit_visit_report(request, visit_id):
                     'success': True,
                     'message': "Saved as 'Draft'.",
                     'status': 'draft',
+                    # Re-render so newly attached files appear in the list.
+                    'refresh': bool(form.cleaned_data.get(uploads.FIELD_NAME)),
                 })
             return JsonResponse({
                 'success': True,
@@ -238,9 +242,12 @@ def edit_visit_report(request, visit_id):
                 'action': 'reload',
             })
         else:
+            upload_errors = form.errors.get(uploads.FIELD_NAME)
             return JsonResponse({
                 'status': 'error',
-                'message': 'Please correct the errors.',
+                # The page alerts only `message`, so surface file problems in it.
+                'message': 'Please correct the errors.' + (
+                    ' ' + ' '.join(upload_errors) if upload_errors else ''),
                 'errors': form.errors.as_json(),
             }, status=400)
 
@@ -258,7 +265,42 @@ def edit_visit_report(request, visit_id):
         'field_defs': field_defs,
         'page_title': 'Class Visit Report',
         'payment_tracking_enabled': payment_tracking_enabled(),
+        'upload_field_name': uploads.FIELD_NAME,
+        'attachments': uploads.attachment_rows(existing_report, 'faculty', can_remove=True),
     })
+
+
+def _visit_file_or_404(request, visit_id, file_id):
+    """A file on this visit's report that the user may open as a visitor or CE."""
+    from ..models import VisitReportFile
+    visit = get_object_or_404(VisitSchedule, pk=visit_id)
+    if not _may_edit_report(request.user, visit):
+        raise Http404('No file matches the given query.')
+    return get_object_or_404(
+        VisitReportFile, pk=file_id, visit_report__visit_schedule=visit)
+
+
+@login_required(login_url='/')
+def download_file(request, visit_id, file_id):
+    """Visitors and CE download any attachment on the visit's report."""
+    return uploads.file_response(_visit_file_or_404(request, visit_id, file_id))
+
+
+@require_POST
+@login_required(login_url='/')
+def remove_file(request, visit_id, file_id):
+    """Remove a visitor attachment while the report is still a draft."""
+    from ..models import VisitReportFile
+    report_file = _visit_file_or_404(request, visit_id, file_id)
+    if (report_file.kind != VisitReportFile.FACULTY_ATTACHMENT
+            or report_file.visit_report.status == 'Submitted'):
+        return JsonResponse(
+            {'success': False,
+             'message': 'Only visitor files on a draft report can be removed.'},
+            status=400)
+    report_file.file.delete(save=False)
+    report_file.delete()
+    return JsonResponse({'success': True, 'message': 'File removed.'})
 
 
 @login_required(login_url='/')

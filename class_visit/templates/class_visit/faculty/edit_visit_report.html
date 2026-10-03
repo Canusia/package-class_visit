@@ -25,9 +25,17 @@
       </p>
       {% endif %}
       <div class="card-text">
-        <form id="report_form" method="post">
+        <form id="report_form" method="post" enctype="multipart/form-data">
           {% csrf_token %}
           {% include "class_visit/faculty/_report_form_fields.html" %}
+          {% include "class_visit/_attachments.html" %}
+          {% for field in form %}{% if field.name == upload_field_name %}
+          <div class="form-group" id="cv-upload">
+            <label for="{{ field.id_for_label }}">{{ field.label }}</label>
+            {{ field }}
+            <small class="form-text text-muted">{{ field.help_text }}</small>
+          </div>
+          {% endif %}{% endfor %}
           <button type="button" class="btn btn-secondary btn-sm" onclick="submitReport('draft')">Save as Draft</button>
           <button type="button" class="btn btn-primary btn-sm" onclick="submitReport('submit')">Submit Report</button>
         </form>
@@ -49,7 +57,10 @@
     .then(function(r) { return r.json(); })
     .then(function(resp) {
       if (resp.success) {
-        if (resp.action === 'reload' && window.parent && window.parent.closeVisitModal) {
+        if (resp.refresh) {
+          alert(resp.message);
+          window.location.reload();
+        } else if (resp.action === 'reload' && window.parent && window.parent.closeVisitModal) {
           window.parent.closeVisitModal();
         } else {
           alert(resp.message);
@@ -59,6 +70,20 @@
       }
     });
   }
+
+  document.addEventListener('click', function (e) {
+    var btn = e.target.closest ? e.target.closest('.cv-remove-file') : null;
+    if (!btn || !confirm('Remove this file?')) return;
+    var token = document.querySelector('#report_form [name=csrfmiddlewaretoken]').value;
+    fetch(btn.dataset.url, {
+      method: 'POST',
+      headers: { 'X-CSRFToken': token, 'X-Requested-With': 'XMLHttpRequest' }
+    })
+    .then(function (r) { return r.json(); })
+    .then(function (resp) {
+      if (resp.success) { btn.closest('li').remove(); } else { alert(resp.message); }
+    });
+  });
   </script>
 </body>
 </html>

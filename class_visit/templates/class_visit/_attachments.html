@@ -1,0 +1,24 @@
+{% comment %}
+Report attachments list, shared by the CE, faculty and instructor report pages.
+Context: attachments (services.uploads.attachment_rows), optional heading.
+Each row: name, kind, uploaded_by, uploaded_at, url, remove_url ('' = not removable).
+{% endcomment %}
+{% if attachments %}
+<div class="card mb-4" id="cv-attachments">
+  <div class="card-header"><strong>{{ heading|default:"Attachments" }}</strong></div>
+  <ul class="list-group list-group-flush">
+    {% for f in attachments %}
+    <li class="list-group-item d-flex justify-content-between align-items-center">
+      <span>
+        <a href="{{ f.url }}"><i class="fas fa-paperclip"></i>&nbsp;{{ f.name }}</a>
+        <span class="text-muted small ml-2">{{ f.kind }}{% if f.uploaded_by %} · {{ f.uploaded_by }}{% endif %} · {{ f.uploaded_at|date:"m/d/Y" }}</span>
+      </span>
+      {% if f.remove_url %}
+      <button type="button" class="btn btn-sm btn-outline-danger cv-remove-file"
+              data-url="{{ f.remove_url }}">Remove</button>
+      {% endif %}
+    </li>
+    {% endfor %}
+  </ul>
+</div>
+{% endif %}

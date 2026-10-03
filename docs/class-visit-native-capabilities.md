@@ -23,7 +23,7 @@ Each visit produces a structured report whose fields are fully defined by the in
 | **Custom Report Fields** | Institution-defined fields with configurable label, input type (short text, paragraph, dropdown, checkbox, date), required flag, and dropdown options, plus per-field help text for the visitor. **Rubrics**: section headings and rating groups that score many criteria on one shared scale, shown as a grid on screen and in the PDF letter. Fields can be **targeted to specific visit types** (shown only for those types), and the configuration is **validated on save**. |
 | **Public vs. Internal Fields** | Each field can be marked public (shared with the instructor and included in their downloadable report) or internal (visible only to CE/faculty). |
 | **Draft & Submit Workflow** | Reports are saved as Draft while in progress and finalized as Submitted, with notifications firing only on submission. |
-| **File Attachments** | An instructor can attach a document to their response on a submitted report, when Instructor Sign-Off is enabled. The file name appears on the letter; in-app download is not available yet, and visitors cannot attach files (see [report-attachments.md](report-attachments.md)). |
+| **File Attachments** | Optionally, visitors can attach files (photos, signed forms, handouts) to the visit report, and you choose whether the instructor can download them. With Instructor Sign-Off enabled, an instructor can also attach a document to their response. Files are private and download only for permitted users. See [report-attachments.md](report-attachments.md). |
 | **Instructor Confirmation** | Optional one-click email link lets instructors confirm a scheduled visit date without logging in. |
 
 # Notifications & Communication

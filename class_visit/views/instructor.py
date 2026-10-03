@@ -24,6 +24,7 @@ from ..serializers.instructor import InstructorVisitScheduleSerializer
 from ..services import report_fields as rf_service
 from ..services.confirmation import confirm_visit as svc_confirm
 from ..services.pdf import visit_letter_pdf, visit_letters_pdf
+from ..services import uploads
 
 logger = logging.getLogger(__name__)
 
@@ -164,7 +165,31 @@ def report_detail(request, visit_id):
         'pdf_url': reverse(
             'instructor_class_visit:report_pdf', kwargs={'visit_id': visit.id}),
         'ajax': ajax,
+        # Submitted reports only; visitor files only when the tenant allows it.
+        'attachments': uploads.attachment_rows(report, 'instructor'),
     })
+
+
+@login_required
+def download_file(request, visit_id, file_id):
+    """An attachment the instructor may see on their own submitted visit report.
+
+    404 for anything else (another instructor's visit, a draft, or a visitor
+    file while `instructor_view_visitor_files` is off), so the endpoint never
+    confirms what exists.
+    """
+    teacher = _get_teacher_or_none(request)
+    if teacher is None:
+        raise Http404('No file matches the given query.')
+    visit = VisitSchedule.objects.filter(
+        pk=visit_id, class_sections__teacher=teacher).distinct().first()
+    report = visit.has_report() if visit else None
+    if not report:
+        raise Http404('No file matches the given query.')
+    for report_file in uploads.visible_files(report, 'instructor'):
+        if str(report_file.id) == str(file_id):
+            return uploads.file_response(report_file)
+    raise Http404('No file matches the given query.')
 
 
 @login_required

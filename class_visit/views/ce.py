@@ -27,6 +27,7 @@ from ..services import pdf as pdf_service
 from ..services import report_fields
 from ..services import emails as email_service
 from ..services.payment import payment_tracking_enabled
+from ..services import uploads
 from ..services.section_scope import status_filter_to_db
 from ..settings.class_visit import class_visit as ClassVisitSettings
 
@@ -268,8 +269,18 @@ def view_report(request, visit_id):
                 'class_visit:ce_report_pdf', kwargs={'visit_id': visit.id}),
             'ajax': ajax,
             'payment_tracking_enabled': payment_tracking_enabled(),
+            'attachments': uploads.attachment_rows(report, 'ce'),
         },
     )
+
+
+@login_required(login_url='/')
+def download_file(request, visit_id, file_id):
+    """CE downloads any attachment on a visit's report."""
+    from ..models import VisitReportFile
+    report_file = get_object_or_404(
+        VisitReportFile, pk=file_id, visit_report__visit_schedule__id=visit_id)
+    return uploads.file_response(report_file)
 
 
 @login_required(login_url='/')
