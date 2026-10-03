@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "myce_class_visit"
-version = "0.0.18"
+version = "0.0.19"
 description = "MyCE - Class Visit"
 requires-python = ">=3.8"
 # Dependencies live here, not in setup.cfg: with a [project] table that does
