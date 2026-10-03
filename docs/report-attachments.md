@@ -31,6 +31,8 @@ flowchart TD
 | Setting | Default | Effect |
 |---|---|---|
 | `visitor_file_upload` | No | The report form shows a multi-file input. Turning it off later stops new uploads; existing files stay visible and downloadable. |
+| `visitor_file_required` | No | With uploads on, **Submit** needs at least one visitor file (already attached or in the same save). Drafts are exempt. Enforced in `VisitReportDynamicForm.clean()`. |
+| `instructor_file_required` | No | With sign-off on, a sign-off / response is refused, with nothing written, unless the instructor uploads a file or already has one. Enforced in `views/instructor.py::sign_report`; the panel shows the error via `?signoff_error=file_required`. |
 | `instructor_view_visitor_files` | No | The instructor sees and can download visitor files on a **submitted** report. Shown in the settings form only when uploads are Yes. |
 
 ## Rules
@@ -46,7 +48,7 @@ flowchart TD
 
 ## Possible next steps
 
-- A `report_fields_json` `file` type, if a tenant needs *required* or per-visit-type
+- A `report_fields_json` `file` type, if a tenant needs per-visit-type or per-field
   attachments (e.g. "signed observation form" on Initial visits only).
 - Visitor file names on the CE/faculty letter PDF.
 

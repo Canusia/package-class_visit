@@ -142,7 +142,9 @@ python manage.py collectstatic --noinput
 - `instructor_confirm_link` — when Yes, the `{{confirmation_link}}` shortcode is populated in the scheduled email
 - `notify_teacher_on_submit` + `teacher_submit_subject` / `teacher_submit_message`
 - `visitor_file_upload` (Yes / No, default No) — when Yes, the visit report form accepts file attachments (10 MB each; pdf, Office, txt/csv, images), stored as `VisitReportFile(kind='faculty_attachment')`. Visitors can remove their files while the report is a draft. CE and the visit's visitors can always download them.
+- `visitor_file_required` (Yes / No, default No; shown when uploads are Yes) — when Yes, **Submit** is refused until the report has at least one visitor file; Save as Draft never requires it.
 - `instructor_view_visitor_files` (Yes / No, default No; shown when uploads are Yes) — when Yes, the instructor can see and download visitor files on a submitted report.
+- `instructor_file_required` (Yes / No, default No; shown when sign-off is Yes) — when Yes, a sign-off / response POST is refused, with nothing written, unless the instructor uploads a file or already has one on the report.
 - `instructor_signature` (Yes / No, default No) — when Yes, an instructor viewing a submitted report can type their name to acknowledge it and add a written response with an optional attachment. Advisory: it never blocks submission or any other flow, and a faculty re-submission clears the signature while keeping the response.
 - `notify_visitor_on_response` (Yes / No, default No) + `visitor_response_subject` / `visitor_response_message` — emails the visitor(s) when an instructor responds.
 - `notify_office_on_submit` (Yes / No, default Yes) + `office_submit_subject` / `office_submit_message` — the internal copy sent to `notify_target`. Blank subject/message fall back to the teacher wording, which is what the module did unconditionally before.

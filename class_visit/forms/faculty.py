@@ -287,7 +287,19 @@ class VisitReportDynamicForm(forms.Form):
         # Visitor attachments, when the tenant allows them. Rendered by the page
         # template, not the report layout, so the report fields stay as configured.
         if uploads.uploads_enabled():
-            self.fields[uploads.FIELD_NAME] = uploads.build_upload_field()
+            self.fields[uploads.FIELD_NAME] = uploads.build_upload_field(
+                required_to_submit=uploads.visitor_file_required())
+
+    def clean(self):
+        cleaned = super().clean()
+        from ..models import VisitReportFile
+        if (uploads.FIELD_NAME in self.fields
+                and (cleaned.get('submit_action') or '').lower() == 'submit'
+                and not cleaned.get(uploads.FIELD_NAME)
+                and uploads.visitor_file_required()
+                and not uploads.has_files(self._visit, VisitReportFile.FACULTY_ATTACHMENT)):
+            self.add_error(uploads.FIELD_NAME, uploads.VISITOR_FILE_REQUIRED_MSG)
+        return cleaned
 
     def save(self, created_by_user, commit=True):
         """Upsert VisitReport; flips status based on submit_action.

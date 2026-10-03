@@ -37,6 +37,29 @@ def instructor_sees_visitor_files():
     return _settings().get('instructor_view_visitor_files', 'No') == 'Yes'
 
 
+def visitor_file_required():
+    """Submit needs a visitor file (`visitor_file_required`, only with uploads on)."""
+    s = _settings()
+    return (s.get('visitor_file_upload', 'No') == 'Yes'
+            and s.get('visitor_file_required', 'No') == 'Yes')
+
+
+def instructor_file_required():
+    """Sign-off needs an instructor file (`instructor_file_required`, only with sign-off on)."""
+    s = _settings()
+    return (s.get('instructor_signature', 'No') == 'Yes'
+            and s.get('instructor_file_required', 'No') == 'Yes')
+
+
+def has_files(visit, kind):
+    from ..models import VisitReportFile
+    return VisitReportFile.objects.filter(
+        visit_report__visit_schedule=visit, kind=kind).exists()
+
+
+VISITOR_FILE_REQUIRED_MSG = 'Attach at least one file before submitting the report.'
+
+
 def validate_upload(f):
     ext = os.path.splitext(f.name)[1].lower().lstrip('.')
     if ext not in ALLOWED_EXTENSIONS:
@@ -66,10 +89,11 @@ class MultipleFileField(forms.FileField):
         return [single(data, initial)] if data else []
 
 
-def build_upload_field():
+def build_upload_field(required_to_submit=False):
     return MultipleFileField(
-        required=False,
-        label='Attach files (optional)',
+        required=False,  # drafts never need one; Submit is checked in the form's clean()
+        label='Attach files (required to submit)' if required_to_submit
+        else 'Attach files (optional)',
         help_text=(
             f'Up to {MAX_UPLOAD_BYTES // (1024 * 1024)} MB each. '
             f'Allowed: {", ".join(ALLOWED_EXTENSIONS)}.'

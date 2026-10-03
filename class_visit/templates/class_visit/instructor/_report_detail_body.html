@@ -121,6 +121,9 @@ Context: visit, public_values, can_download, pdf_url, ajax
             </div>
           {% endif %}
 
+          {% if signoff_error %}
+            <div class="alert alert-danger" role="alert">{{ signoff_error }}</div>
+          {% endif %}
           <form method="post" action="{{ sign_url }}" enctype="multipart/form-data">
             {% csrf_token %}
             {% if not report.instructor_signature %}
@@ -143,9 +146,10 @@ Context: visit, public_values, can_download, pdf_url, ajax
             </div>
 
             <div class="form-group">
-              <label for="id_response_file">Attach a document (optional)</label>
+              <label for="id_response_file">Attach a document
+                {% if signoff_file_required %}(required){% else %}(optional){% endif %}</label>
               <input type="file" class="form-control-file" id="id_response_file"
-                     name="response_file">
+                     name="response_file"{% if signoff_file_required and not signoff_has_file %} required{% endif %}>
             </div>
 
             <button type="submit" class="btn btn-primary btn-sm">Save</button>

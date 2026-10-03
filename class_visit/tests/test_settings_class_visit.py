@@ -28,6 +28,8 @@ BASE_DATA = {
     'notify_visitor_on_response': 'No',
     'visitor_file_upload': 'No',
     'instructor_view_visitor_files': 'No',
+    'visitor_file_required': 'No',
+    'instructor_file_required': 'No',
     'teacher_submit_subject': '',
     'teacher_submit_message': '',
     'visitor_reminder_subject': '',

@@ -91,7 +91,7 @@ keep that workbook in sync when you add, rename, or remove a setting. Keys:
 `is_active` / `debug_email_list`, `report_fields_json`, `visit_types`, `section_status_filter`,
 `notify_target` / `generic_email`, `notify_teacher_on_schedule` + subject/message,
 `instructor_confirm_link`, `notify_teacher_on_submit` + subject/message,
-`visitor_file_upload` / `instructor_view_visitor_files`,
+`visitor_file_upload` / `visitor_file_required` / `instructor_view_visitor_files`, `instructor_file_required`,
 `visitor_reminder_subject` / `visitor_reminder_message`, `reminder_every_days`,
 `payment_tracking`, `notify_visitor_on_paid` / `visitor_paid_subject` / `visitor_paid_message`.
 

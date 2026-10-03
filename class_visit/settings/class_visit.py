@@ -233,6 +233,16 @@ class class_visit(forms.Form):
         widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
     )
 
+    instructor_file_required = forms.ChoiceField(
+        choices=YES_NO,
+        label='Require a File with the Instructor Sign-Off',
+        help_text=(
+            'When Yes (and Instructor Sign-Off is on), an instructor must attach at least '
+            'one file to sign or respond.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
     notify_visitor_on_response = forms.ChoiceField(
         choices=YES_NO,
         label='Notify Visitor When Instructor Responds',
@@ -265,6 +275,16 @@ class class_visit(forms.Form):
             'When Yes, the visit report form lets visitors upload files (photos, signed '
             'forms, handouts). Up to 10 MB each; PDF, Office, text/CSV and image files. '
             'CE staff and the visit\'s visitors can always download them.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
+    visitor_file_required = forms.ChoiceField(
+        choices=YES_NO,
+        label='Require a File to Submit the Report',
+        help_text=(
+            'When Yes, a visitor cannot submit the report until at least one file is '
+            'attached. Saving as a draft never requires it.'
         ),
         widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
     )
@@ -375,13 +395,17 @@ class class_visit(forms.Form):
     set('visitor_paid_message', payOn && notifyOn);
     var up = document.getElementById('id_visitor_file_upload');
     set('instructor_view_visitor_files', up && up.value === 'Yes');
+    set('visitor_file_required', up && up.value === 'Yes');
+    var sig = document.getElementById('id_instructor_signature');
+    set('instructor_file_required', sig && sig.value === 'Yes');
   };
   if (!window.cvPaymentNotifyBound) {
     window.cvPaymentNotifyBound = true;
     document.addEventListener('change', function (e) {
       if (e.target && (e.target.id === 'id_payment_tracking' ||
                        e.target.id === 'id_notify_visitor_on_paid' ||
-                       e.target.id === 'id_visitor_file_upload')) {
+                       e.target.id === 'id_visitor_file_upload' ||
+                       e.target.id === 'id_instructor_signature')) {
         window.cvSyncPaymentNotify();
       }
     });
@@ -574,6 +598,8 @@ class class_visit(forms.Form):
             'instructor_signature': 'No',
             'visitor_file_upload': 'No',
             'instructor_view_visitor_files': 'No',
+            'visitor_file_required': 'No',
+            'instructor_file_required': 'No',
             'notify_visitor_on_response': 'No',
             'visitor_response_subject': 'Instructor Response to Visit Report',
             'visitor_response_message': '',

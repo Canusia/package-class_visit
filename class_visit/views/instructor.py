@@ -18,7 +18,7 @@ from cis.menu import draw_menu
 from cis.models.teacher import Teacher
 from cis.utils import INSTRUCTOR_user_only, user_has_instructor_role
 
-from ..models import VisitSchedule, VisitReport
+from ..models import VisitSchedule, VisitReport, VisitReportFile
 from ..services import emails
 from ..serializers.instructor import InstructorVisitScheduleSerializer
 from ..services import report_fields as rf_service
@@ -167,6 +167,12 @@ def report_detail(request, visit_id):
         'ajax': ajax,
         # Submitted reports only; visitor files only when the tenant allows it.
         'attachments': uploads.attachment_rows(report, 'instructor'),
+        'signoff_file_required': uploads.instructor_file_required(),
+        'signoff_has_file': bool(report) and report.files.filter(
+            kind=VisitReportFile.INSTRUCTOR_RESPONSE).exists(),
+        'signoff_error': (
+            'Attach a file to sign or respond — your program requires one.'
+            if request.GET.get('signoff_error') == 'file_required' else ''),
     })
 
 
@@ -261,7 +267,6 @@ def sign_report(request, visit_id):
     exist: for the feature being off, for another instructor's visit, and for a
     report that is not submitted yet.
     """
-    from ..models import VisitReportFile
     from ..settings.class_visit import class_visit as CVSettings
 
     if CVSettings.from_db().get('instructor_signature', 'No') != 'Yes':
@@ -276,6 +281,14 @@ def sign_report(request, visit_id):
     report = visit.has_report() if visit else None
     if not report or report.status != 'Submitted':
         raise Http404('No submitted report matches the given query.')
+
+    uploaded = request.FILES.get('response_file')
+    if (not uploaded and uploads.instructor_file_required()
+            and not uploads.has_files(visit, VisitReportFile.INSTRUCTOR_RESPONSE)):
+        # Refuse the whole post: a signature without the required file is incomplete.
+        return redirect(
+            reverse('instructor_class_visit:report_detail', kwargs={'visit_id': visit.id})
+            + '?signoff_error=file_required')
 
     now = timezone.now()
     fields = []
@@ -295,7 +308,6 @@ def sign_report(request, visit_id):
     if fields:
         report.save(update_fields=fields)
 
-    uploaded = request.FILES.get('response_file')
     if uploaded:
         VisitReportFile.objects.create(
             visit_report=report, file=uploaded, uploaded_by=request.user,

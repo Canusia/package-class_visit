@@ -153,7 +153,7 @@ ____________________________________
 
 ____________________________________
 
-**4.3** Do visitors need to **attach files** to a report (photos, signed forms, handouts)? Files are optional on each report, up to 10 MB each (PDF, Word/Excel/PowerPoint, text/CSV, images). Your office staff and the visit's visitors can always download them. (Default: No.)
+**4.3** Do visitors need to **attach files** to a report (photos, signed forms, handouts)? Up to 10 MB each (PDF, Word/Excel/PowerPoint, text/CSV, images). Your office staff and the visit's visitors can always download them. (Default: No.)
 
 - [ ] No — reports are text only
 - [ ] Yes — visitors can attach files
@@ -162,6 +162,11 @@ ____________________________________
 
 - [ ] No
 - [ ] Yes
+
+**4.3b** *(only if 4.3 = Yes)* Must every report have **at least one file** before it can be submitted? Drafts can always be saved without one. (Default: No — files are optional.)
+
+- [ ] No — optional
+- [ ] Yes — required to submit
 
 ---
 
@@ -173,6 +178,16 @@ Optionally, when a visit is scheduled the instructor can receive a link to **con
 
 - [ ] Yes — include a confirmation link in the "visit scheduled" email
 - [ ] No — confirmation is not required
+
+**5.2** Should instructors **sign off** on submitted reports? The instructor types their name to acknowledge the report and can add a written response and a file. It is advisory and never blocks anything. (Default: No.)
+
+- [ ] No
+- [ ] Yes — instructors can sign off and respond
+
+**5.2a** *(only if 5.2 = Yes)* Must the instructor **attach a file** to sign off or respond (e.g. a signed paper form)? (Default: No.)
+
+- [ ] No — optional
+- [ ] Yes — a file is required
 
 ---
 
