@@ -153,10 +153,9 @@ ____________________________________
 
 ____________________________________
 
-**4.3** Do visitors need to **attach files** to a report (photos, signed forms, handouts)?
+**4.3** *Attachments:* visitors cannot attach files (photos, signed forms, handouts) to a report today — describe them in a report field instead. If you need visitor attachments, note it here and we will log it as a feature request.
 
-- [ ] Yes
-- [ ] No
+____________________________________
 
 ---
 
