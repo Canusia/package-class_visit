@@ -38,6 +38,9 @@ def _sfx():
 
 
 def _render(**ctx):
+    # The partial resolves payment tracking from the DB unless told (#19);
+    # SimpleTestCase renders must stay DB-free, so say it explicitly.
+    ctx.setdefault('payment_tracking_enabled', True)
     return render_to_string('schedule/class_visits.html', ctx)
 
 

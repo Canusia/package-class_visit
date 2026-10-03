@@ -109,7 +109,10 @@ Notes on recent additions:
   `VisitReport.mark_as_payment_processed(user)` and reverse it with `unmark_payment_processed(user)`;
   both record who/when in `meta['payment_history']` (#17). The CE and faculty visits tables, both
   report pages and the Visit Reports export show payment status. Gate everything on
-  `services/payment.py::payment_tracking_enabled()` rather than reading the setting inline. Marking paid emails each
+  `services/payment.py::payment_tracking_enabled()` rather than reading the setting inline. The shared
+  visits tab `templates/schedule/class_visits.html` (included from `cis`, which passes no flag)
+  resolves it itself via `{% class_visit_payment_tracking as payment_tracking_enabled %}`
+  (`templatetags/class_visit_tags.py`, #19); a context value wins, so DB-free tests pass it. Marking paid emails each
   visitor when `notify_visitor_on_paid` = Yes (`services/emails.py::notify_visitor_payment_processed`,
   same shortcodes as the visitor reminder). The payment fields render at the bottom of the settings
   form and toggle their visibility via JS injected through the crispy layout.

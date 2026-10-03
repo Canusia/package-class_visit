@@ -11,12 +11,15 @@ Context:
                                teacher / term / academic_year
   record                     — the tab's host record (anchor for "Add New Visit")
   allow_add_new_visit_date   — '1' to show the Add New Visit button
+  payment_tracking_enabled   — optional; when absent the class_visit_payment_tracking
+                               tag reads the payment_tracking setting (#19)
 
 Reads the same CE endpoint and serializer as the standalone CE visits page
 (class_visit:ce_index) — keep the columns here in sync with
 staticfiles/class_visit/js/ce_visits.js.
 {% endcomment %}
-{% load templatehelpers %}
+{% load templatehelpers class_visit_tags %}
+{% class_visit_payment_tracking as payment_tracking_enabled %}
 
 <div class="card mb-4 border-top-0">
     <div class="card-body">
@@ -120,6 +123,7 @@ staticfiles/class_visit/js/ce_visits.js.
                                 return '<span class="badge badge-secondary">No Report</span>';
                             }
                         },
+                        {% if payment_tracking_enabled %}
                         /* payment_status (computed — not orderable/searchable) */
                         {
                             data: 'payment_status',
@@ -127,6 +131,7 @@ staticfiles/class_visit/js/ce_visits.js.
                             orderable: false,
                             searchable: false
                         },
+                        {% endif %}
                         /* Actions */
                         {
                             data: 'id',
@@ -209,7 +214,9 @@ staticfiles/class_visit/js/ce_visits.js.
                     <th data-data="teacher_display" searchable="0" data-name="teacher_display">Instructor</th>
                     <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)</th>
                     <th data-data="report_status" searchable="0" data-name="report_status">Report Status</th>
+                    {% if payment_tracking_enabled %}
                     <th data-data="payment_status" searchable="0" data-name="payment_status">Payment Status</th>
+                    {% endif %}
                     <th data-data="id" data-name='id'>Actions</th>
                 </tr>
             </thead>

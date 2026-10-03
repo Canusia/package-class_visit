@@ -605,10 +605,13 @@ class SharedVisitsTablePaymentColumnTest(TestCase):
     payment_status_sexy, which the serializer never emits, producing
     'DataTables warning ... Requested unknown parameter payment_status_sexy'."""
 
-    def _html(self):
+    def _html(self, tracking='Yes', **extra):
         import uuid
         from django.template.loader import render_to_string
         from django.contrib.auth import get_user_model
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(
+            key='class_visit', defaults={'value': {'payment_tracking': tracking}})
         user = get_user_model().objects.create(
             username=f'shared_visits_{uuid.uuid4().hex[:8]}@x.com',
             email=f'shared_visits_{uuid.uuid4().hex[:8]}@x.com',
@@ -618,7 +621,23 @@ class SharedVisitsTablePaymentColumnTest(TestCase):
             'type': 'by_visitor',
             'visitor': user,
             'allow_add_new_visit_date': '0',
+            **extra,
         })
+
+    def test_payment_column_hidden_when_tracking_off(self):
+        # #19: the cis includers pass no flag; the partial reads the setting itself.
+        html = self._html(tracking='No')
+        self.assertNotIn('Payment Status', html)
+        self.assertNotIn("data: 'payment_status'", html)
+
+    def test_payment_column_shown_when_tracking_on(self):
+        html = self._html(tracking='Yes')
+        self.assertIn('Payment Status', html)
+        self.assertIn("data: 'payment_status'", html)
+
+    def test_context_flag_overrides_setting(self):
+        html = self._html(tracking='Yes', payment_tracking_enabled=False)
+        self.assertNotIn('Payment Status', html)
 
     def test_payment_column_requests_field_serializer_emits(self):
         from ..serializers.ce import CEVisitScheduleSerializer
