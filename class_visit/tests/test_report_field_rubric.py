@@ -366,9 +366,11 @@ class ExportTest(SimpleTestCase):
     """The CSV export: a column per criterion, none for headings."""
 
     def test_headers_flatten_rating_groups(self):
-        from ..reports.visit_reports import visit_reports
-        with _settings(RUBRIC_DEFS):
-            headers = visit_reports()._headers()
+        from ..reports import visit_reports as vr
+        # Payment columns (#17) read the DB setting; this test is about rubric headers.
+        with _settings(RUBRIC_DEFS), \
+                patch.object(vr, 'payment_tracking_enabled', return_value=False):
+            headers = vr.visit_reports()._headers()
 
         self.assertEqual(headers[5:], [
             'Teaching: Lesson pacing', 'Teaching: Questioning', 'Internal notes'])

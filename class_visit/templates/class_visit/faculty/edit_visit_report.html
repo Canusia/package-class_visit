@@ -20,7 +20,9 @@
     <div class="card-body">
       <h3 class="card-title">{{ page_title }}</h3>
       {% if existing_report %}
-      <p class="text-muted mb-3">Status: <strong>{{ existing_report.status }}</strong></p>
+      <p class="text-muted mb-3">Status: <strong>{{ existing_report.status }}</strong>
+        {% if payment_tracking_enabled %}{% include "class_visit/_payment_status.html" with report=existing_report %}{% endif %}
+      </p>
       {% endif %}
       <div class="card-text">
         <form id="report_form" method="post">

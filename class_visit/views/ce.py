@@ -26,7 +26,7 @@ from ..serializers.ce import (
 from ..services import pdf as pdf_service
 from ..services import report_fields
 from ..services import emails as email_service
-from ..settings.class_visit import class_visit as ClassVisitSettings
+from ..services.payment import payment_tracking_enabled
 
 logger = logging.getLogger(__name__)
 
@@ -149,7 +149,7 @@ def index(request):
             'active_term': active_term(),
             'api_url': '/ce/class_visits/api/visit_schedule/?format=datatables',
             'not_needed_api_url': '/ce/class_visits/api/not_needed_visit/?format=datatables',
-            'payment_tracking_enabled': ClassVisitSettings.from_db().get('payment_tracking', 'No') == 'Yes',
+            'payment_tracking_enabled': payment_tracking_enabled(),
         },
     )
 
@@ -265,6 +265,7 @@ def view_report(request, visit_id):
             'pdf_url': reverse(
                 'class_visit:ce_report_pdf', kwargs={'visit_id': visit.id}),
             'ajax': ajax,
+            'payment_tracking_enabled': payment_tracking_enabled(),
         },
     )
 
@@ -405,25 +406,31 @@ def do_bulk_action(request):
         response['Content-Disposition'] = 'attachment; filename="visit_letters.pdf"'
         return response
 
-    if action == 'mark_as_paid':
-        if ClassVisitSettings.from_db().get('payment_tracking', 'No') != 'Yes':
+    if action in ('mark_as_paid', 'mark_as_unpaid'):
+        if not payment_tracking_enabled():
             return JsonResponse(
                 {'success': False, 'message': 'Payment tracking is not enabled.'},
                 status=403,
             )
-        marked = 0
+        changed = 0
         total = len(ids)
         for visit_id in ids:
             try:
                 report = VisitSchedule.objects.get(pk=visit_id).report
             except (VisitSchedule.DoesNotExist, VisitReport.DoesNotExist):
                 continue
-            if report.can_payment_be_processed and report.payment_processed != '1':
-                report.mark_as_payment_processed()
+            if action == 'mark_as_unpaid':
+                # No email: un-marking corrects a mistake, it is not a payout event.
+                if report.unmark_payment_processed(request.user):
+                    changed += 1
+            elif report.can_payment_be_processed and report.payment_processed != '1':
+                report.mark_as_payment_processed(request.user)
                 email_service.notify_visitor_payment_processed(report)
-                marked += 1
+                changed += 1
+        verb = 'Unmarked' if action == 'mark_as_unpaid' else 'Marked'
+        suffix = ' (marked as unpaid)' if action == 'mark_as_unpaid' else ' as paid'
         return JsonResponse(
-            {'success': True, 'message': f'Marked {marked} of {total} report(s) as paid.'}
+            {'success': True, 'message': f'{verb} {changed} of {total} report(s){suffix}.'}
         )
 
     return JsonResponse({'success': False, 'message': f'Unknown action: {action}'}, status=400)

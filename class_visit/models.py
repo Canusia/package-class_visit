@@ -456,17 +456,47 @@ class VisitReport(models.Model):
             return 'Not Eligible'
 
         if self.payment_processed == '1':
-            return 'Processed on ' + self.meta.get('payment_processed')
+            status = 'Processed on ' + (self.meta.get('payment_processed') or '')
+            if self.payment_processed_by:
+                status += ' by ' + self.payment_processed_by
+            return status
         return 'Pending'
-    
+
+    @property
+    def payment_processed_by(self):
+        """Display name of whoever marked the report paid; '' for legacy rows."""
+        return (self.meta or {}).get('payment_processed_by', '')
+
     @property
     def can_payment_be_processed(self):
         return True if self.is_submitted else False
-    
-    def mark_as_payment_processed(self):
+
+    def _log_payment(self, action, user):
+        # Append-only audit (#17): every mark / un-mark, with who and when.
+        self.meta.setdefault('payment_history', []).append({
+            'action': action,
+            'on': datetime.datetime.now().isoformat(timespec='seconds'),
+            'by_id': getattr(user, 'pk', None),
+            'by': user.get_full_name() if user else '',
+        })
+
+    def mark_as_payment_processed(self, user=None):
         self.payment_processed = '1'
         self.meta['payment_processed'] = datetime.datetime.now().strftime('%m/%d/%Y')
+        self.meta['payment_processed_by'] = user.get_full_name() if user else ''
+        self._log_payment('paid', user)
         self.save()
+
+    def unmark_payment_processed(self, user=None):
+        """Reverse a mark-paid made in error. Returns False when the report was not paid."""
+        if self.payment_processed != '1':
+            return False
+        self.payment_processed = '2'
+        self.meta.pop('payment_processed', None)
+        self.meta.pop('payment_processed_by', None)
+        self._log_payment('unpaid', user)
+        self.save()
+        return True
 
 class VisitReportFile(models.Model):
     FACULTY_ATTACHMENT = 'faculty_attachment'

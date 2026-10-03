@@ -11,6 +11,7 @@ from crispy_forms.helper import FormHelper
 from crispy_forms.layout import Submit
 
 from cis.models.term import Term
+from ..services.payment import payment_tracking_enabled
 from ..services.report_fields import get_report_field_defs, input_field_defs
 
 
@@ -55,8 +56,16 @@ class visit_reports(forms.Form):
             return f"{fd['group_label']}: {fd['label']}"
         return fd['label']
 
+    def _payment_columns(self):
+        # Resolved once per export; the setting cannot change mid-run.
+        if not hasattr(self, '_with_payment'):
+            self._with_payment = payment_tracking_enabled()
+        return self._with_payment
+
     def _headers(self):
         static = ['Visit Date', 'Type of Visit', 'Sections (CRN)', 'Teacher', 'Report Status']
+        if self._payment_columns():
+            static += ['Payment Status', 'Paid On', 'Paid By']
         # Support both 'name' (real service) and 'key' (legacy/test mocks) as the field key
         dynamic = [self._header(fd) for fd in self._field_defs()]
         return static + dynamic
@@ -65,9 +74,17 @@ class visit_reports(forms.Form):
         visit = report.visit_schedule
         visit_date_str = visit.visit_date.strftime('%m/%d/%Y') if visit.visit_date else ''
         crns = ', '.join(s.class_number for s in visit.class_sections.all())
-        teacher_name = visit.teacher.get_full_name() if visit.teacher else ''
+        # Teacher is the cis profile; the name lives on its user.
+        teacher_name = visit.teacher.user.get_full_name() if visit.teacher else ''
         static = [visit_date_str, visit.type_of_visit, crns, teacher_name, report.status]
         meta = report.meta or {}
+        if self._payment_columns():
+            paid = report.payment_processed == '1'
+            static += [
+                report.payment_status_sexy,
+                meta.get('payment_processed', '') if paid else '',
+                report.payment_processed_by if paid else '',
+            ]
         # Use 'name' field as the meta key (matches real get_report_field_defs shape)
         dynamic = [str(meta.get(fd.get('name', fd.get('key', '')), '')) for fd in self._field_defs()]
         return static + dynamic

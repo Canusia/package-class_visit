@@ -145,7 +145,7 @@ python manage.py collectstatic --noinput
 - `notify_visitor_on_response` (Yes / No, default No) + `visitor_response_subject` / `visitor_response_message` — emails the visitor(s) when an instructor responds.
 - `notify_office_on_submit` (Yes / No, default Yes) + `office_submit_subject` / `office_submit_message` — the internal copy sent to `notify_target`. Blank subject/message fall back to the teacher wording, which is what the module did unconditionally before.
 - `visitor_reminder_subject` / `visitor_reminder_message` + `reminder_every_days`
-- `payment_tracking` (Yes / No) — when Yes, CE staff can **Mark Selected as Paid** on the CE visits page, and both the CE and faculty visits tables show a **Payment Status** column. (Shown at the bottom of the settings form.)
+- `payment_tracking` (Yes / No) — when Yes, CE staff can **Mark Selected as Paid** / **Mark Selected as Unpaid** on the CE visits page (each change records who and when in `meta['payment_history']`). The CE and faculty visits tables show a **Payment Status** column ("Processed on <date> by <name>"), the CE and faculty report pages show a Payment line, and the Visit Reports export adds **Payment Status / Paid On / Paid By** columns. All hidden when No. (Shown at the bottom of the settings form.)
 - `notify_visitor_on_paid` (Yes / No) + `visitor_paid_subject` / `visitor_paid_message` — when payment tracking is on and this is Yes, each visitor is emailed when their report is marked paid. The message uses the same shortcodes as the visitor reminder: `{{visitor_first_name}}`, `{{visit_date}}`, `{{class_sections}}`, `{{report_url}}`. Both report-link shortcodes point at login-gated pages.
 
 The CE **View Report** button opens the report in an in-page iframe modal.

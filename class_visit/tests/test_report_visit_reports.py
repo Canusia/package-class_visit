@@ -25,7 +25,7 @@ class VisitReportsReportTest(TestCase):
         visit.visit_date = datetime.date(2025, 4, 10)
         visit.type_of_visit = 'Observation'
         teacher = MagicMock()
-        teacher.get_full_name.return_value = 'Bob Jones'
+        teacher.user.get_full_name.return_value = 'Bob Jones'
         visit.teacher = teacher
         visit.class_sections.all.return_value = [MagicMock(class_number='CRN999')]
         report.visit_schedule = visit

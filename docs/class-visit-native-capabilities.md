@@ -39,7 +39,7 @@ Professional, configurable email communication keeps instructors and administrat
 # Tracking & Payments
 
 - **Visit Status Visibility:** Scheduled, pending, and completed visits are tracked per section and per instructor. The CE and faculty visit tables show a **Report Status** column, and — when payment tracking is on — a **Payment Status** column.
-- **Payment Tracking:** Submitted reports can be marked **payment-processed** (individually or in bulk from the CE visits page), letting programs that pay a stipend or honorarium per visit track which visits have been paid out. When enabled, each **visitor can be automatically emailed when their report is marked paid** (configurable subject/message using the same shortcodes as the overdue-report reminder).
+- **Payment Tracking:** Submitted reports can be marked **payment-processed** (individually or in bulk from the CE visits page, and un-marked to correct a mistake, with who/when recorded for audit; payment status, date and who marked it appear in the visit lists, report pages and the Visit Reports export), letting programs that pay a stipend or honorarium per visit track which visits have been paid out. When enabled, each **visitor can be automatically emailed when their report is marked paid** (configurable subject/message using the same shortcodes as the overdue-report reminder).
 
 # Reporting & Compliance
 

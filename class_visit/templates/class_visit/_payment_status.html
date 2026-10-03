@@ -1,0 +1,9 @@
+{% comment %}
+Payment line for a submitted report (#17). Include only when payment tracking is on.
+Context: report
+{% endcomment %}
+{% if report and report.status == 'Submitted' %}
+<span id="cv-payment-status" class="ml-2 small text-muted">
+  Payment: <strong>{{ report.payment_status_sexy }}</strong>
+</span>
+{% endif %}

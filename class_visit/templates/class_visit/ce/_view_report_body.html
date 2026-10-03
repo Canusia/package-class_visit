@@ -65,6 +65,7 @@ Context: visit, report, report_fields, can_download, pdf_url, ajax
     <span class="badge badge-{% if report.status == 'Submitted' %}success{% else %}warning{% endif %} ml-2">
       {{ report.status }}
     </span>
+    {% if payment_tracking_enabled %}{% include "class_visit/_payment_status.html" %}{% endif %}
   </div>
   <div class="card-body">
     {% if report_fields %}

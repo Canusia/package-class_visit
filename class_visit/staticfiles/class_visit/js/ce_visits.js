@@ -260,13 +260,13 @@ $(document).ready(function () {
         });
     });
 
-    /* ===== Mark selected as paid ===== */
-    $(document).on('click', '#btn_mark_paid', function () {
+    /* ===== Mark selected as paid / unpaid ===== */
+    function postPaymentAction(action, confirmText, errorText) {
         var selected = [];
         $('.chk-visit:checked').each(function () { selected.push($(this).val()); });
         if (!selected.length) { swal('', 'Select at least one visit.', 'warning'); return; }
-        if (!confirm('Mark the selected submitted report(s) as paid?')) return;
-        var data = { action: 'mark_as_paid', csrfmiddlewaretoken: CV_CSRFTOKEN };
+        if (!confirm(confirmText)) return;
+        var data = { action: action, csrfmiddlewaretoken: CV_CSRFTOKEN };
         $.blockUI();
         $.ajax({
             type: 'POST', url: CV_BULK_ACTION_URL,
@@ -281,11 +281,23 @@ $(document).ready(function () {
             },
             error: function (xhr) {
                 $.unblockUI();
-                var msg = 'Could not mark as paid.';
+                var msg = errorText;
                 try { msg = JSON.parse(xhr.responseText).message || msg; } catch (e) {}
                 swal('Error', msg, 'error');
             }
         });
+    }
+
+    $(document).on('click', '#btn_mark_paid', function () {
+        postPaymentAction('mark_as_paid',
+            'Mark the selected submitted report(s) as paid?',
+            'Could not mark as paid.');
+    });
+
+    $(document).on('click', '#btn_mark_unpaid', function () {
+        postPaymentAction('mark_as_unpaid',
+            'Mark the selected report(s) as unpaid? No email is sent.',
+            'Could not mark as unpaid.');
     });
 
     /* ===== Not-Needed DataTable ===== */

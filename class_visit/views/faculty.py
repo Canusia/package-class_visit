@@ -28,6 +28,7 @@ from ..serializers.faculty import (
 )
 from ..services import emails, report_fields
 from ..services import pdf as pdf_service
+from ..services.payment import payment_tracking_enabled
 from ..services.scope import (
     class_visit_administrators, scoped_course_ids, scoped_sections,
 )
@@ -256,6 +257,7 @@ def edit_visit_report(request, visit_id):
         'existing_report': existing_report,
         'field_defs': field_defs,
         'page_title': 'Class Visit Report',
+        'payment_tracking_enabled': payment_tracking_enabled(),
     })
 
 
@@ -366,7 +368,5 @@ def index(request):
         'page_title': 'Scheduled Observations',
         'api_url': '/faculty/class_visits/api/visit_schedule/?format=datatables',
         'class_sections_api_url': '/faculty/class_visits/api/class_sections/?format=datatables',
-        'payment_tracking_enabled': (
-            ClassVisitSettings.from_db().get('payment_tracking', 'No') == 'Yes'
-        ),
+        'payment_tracking_enabled': payment_tracking_enabled(),
     })
