@@ -239,6 +239,50 @@ class OthersReportViewTest(_Base):
         self.assertEqual(self.client.get(self._url(self.their_visit)).status_code, 404)
 
 
+class OthersFileDownloadTest(_Base):
+    """Colleagues read submitted reports only -- the same holds for their files."""
+
+    def _file(self, status):
+        from ..models import VisitReportFile
+        visit = self._visit(self.section, self.colleague)
+        report = VisitReport.objects.create(
+            visit_schedule=visit, status=status, meta={},
+            teacher_discussion='', student_discussion='', visit_letter='')
+        f = VisitReportFile(visit_report=report, uploaded_by=self.colleague)
+        f.file.name = 'visit_report_files/x.pdf'
+        f.save()
+        return visit, f
+
+    def _url(self, visit, f):
+        return reverse('faculty_class_visit:download_file',
+                       kwargs={'visit_id': visit.id, 'file_id': f.id})
+
+    def _get(self, visit, f):
+        from unittest.mock import patch
+        from django.http import HttpResponse
+        from ..views import faculty as faculty_views
+        with patch.object(faculty_views.uploads, 'file_response',
+                          return_value=HttpResponse(b'ok')):
+            return self.client.get(self._url(visit, f))
+
+    def test_colleague_cannot_download_a_file_on_a_draft(self):
+        self._settings(faculty_view_others_visits='Yes')
+        visit, f = self._file('Draft')
+        self.client.force_login(self.me)
+        self.assertEqual(self._get(visit, f).status_code, 404)
+
+    def test_colleague_may_download_a_file_on_a_submitted_report(self):
+        self._settings(faculty_view_others_visits='Yes')
+        visit, f = self._file('Submitted')
+        self.client.force_login(self.me)
+        self.assertEqual(self._get(visit, f).status_code, 200)
+
+    def test_visitor_may_download_a_file_on_their_own_draft(self):
+        visit, f = self._file('Draft')
+        self.client.force_login(self.colleague)
+        self.assertEqual(self._get(visit, f).status_code, 200)
+
+
 class NotYourVisitTest(_Base):
     def test_editing_someone_elses_report_explains_why(self):
         self.client.force_login(self.me)

@@ -356,6 +356,12 @@ def _visit_file_or_404(request, visit_id, file_id):
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
     if not _may_view_report(request.user, visit):
         raise Http404('No file matches the given query.')
+    if not _may_edit_report(request.user, visit):
+        # Colleagues read submitted reports only (as in view_report); a draft's
+        # files stay with its visitors.
+        report = visit.has_report()
+        if not (report and report.is_submitted):
+            raise Http404('No file matches the given query.')
     return get_object_or_404(
         VisitReportFile, pk=file_id, visit_report__visit_schedule=visit)
 
