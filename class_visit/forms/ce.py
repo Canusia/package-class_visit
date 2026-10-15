@@ -99,12 +99,17 @@ class CEVisitScheduleForm(forms.Form):
             allowed_status_codes = status_filter_to_db(
                 settings_dict.get('section_status_filter', 'active')
             )
-            sections = list(ClassSection.objects.filter(
-                teacher=anchor.teacher,
-                term=anchor.term,
-                course=anchor.course,
-                status__in=allowed_status_codes,
-            ))
+            # A section with no instructor offers only itself: "same teacher" would
+            # match teacher=None, i.e. every unassigned section in the course/term.
+            if anchor.teacher_id is None:
+                sections = [anchor] if anchor.status in allowed_status_codes else []
+            else:
+                sections = list(ClassSection.objects.filter(
+                    teacher=anchor.teacher,
+                    term=anchor.term,
+                    course=anchor.course,
+                    status__in=allowed_status_codes,
+                ))
             excluded_ids = not_needed_section_ids(sections)
 
             # Sections already on the visit being edited stay selectable even

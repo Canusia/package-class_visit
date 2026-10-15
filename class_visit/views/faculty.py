@@ -2,6 +2,7 @@
 import logging
 
 from django.contrib.auth.decorators import login_required
+from django.db.models import Q
 from django.http import Http404, HttpResponse, JsonResponse
 from django.utils.http import content_disposition_header
 from django.shortcuts import get_object_or_404, render
@@ -31,8 +32,10 @@ from ..services import pdf as pdf_service
 from ..services import uploads
 from ..services.payment import payment_tracking_enabled
 from ..services.scope import (
-    class_visit_administrators, scoped_course_ids, scoped_sections,
+    class_visit_administrators, faculty_can_view_others_visits, is_visitor,
+    scoped_course_ids, scoped_sections,
 )
+from ..services.terms import filter_by_term, term_choices
 
 logger = logging.getLogger(__name__)
 
@@ -82,7 +85,7 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
         term_id = self.request.GET.get('term_id')
         course_id = self.request.GET.get('course_id')
         if term_id:
-            qs = qs.filter(term__id=term_id)
+            qs = filter_by_term(qs, term_id)
         if course_id:
             qs = qs.filter(course__id=course_id)
 
@@ -90,15 +93,28 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
 
 
 class FacultyVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
-    """Visit schedules for the faculty user (visits to sections they oversee)."""
+    """Visit schedules for the faculty user.
+
+    `scope=mine` (default): visits the user is a visitor on -- their own visits.
+    `scope=others`: other faculty's visits to sections in the user's course area,
+    read-only, and only when the `faculty_view_others_visits` setting is Yes.
+    """
 
     serializer_class = FacultyVisitScheduleSerializer
     permission_classes = [FACULTY_user_only]
 
     def get_queryset(self):
-        qs = VisitSchedule.objects.filter(
-            class_sections__in=scoped_sections(self.request.user),
-        ).distinct().prefetch_related(
+        user = self.request.user
+        if self.request.GET.get('scope') == 'others':
+            if not faculty_can_view_others_visits():
+                return VisitSchedule.objects.none()
+            qs = VisitSchedule.objects.filter(
+                class_sections__in=scoped_sections(user),
+            ).exclude(visitors=user)
+        else:
+            qs = VisitSchedule.objects.filter(visitors=user)
+
+        qs = qs.distinct().prefetch_related(
             'class_sections',
             'class_sections__course',
             'class_sections__campus',
@@ -117,7 +133,7 @@ class FacultyVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
         class_section_id = self.request.GET.get('class_section_id')
 
         if term_id:
-            qs = qs.filter(class_sections__term__id=term_id)
+            qs = filter_by_term(qs, term_id, field='class_sections__term')
         if visitor_id:
             qs = qs.filter(visitors__id=visitor_id)
         if class_section_id:
@@ -136,14 +152,19 @@ def manage_visit(request, class_section_id, visit_id=None):
     """Create or edit a VisitSchedule. Renders inside an iframe modal."""
     template = 'class_visit/faculty/manage_visit.html'
 
-    # Both lookups are scoped (#8): a UUID outside this user's sections 404s.
+    # Scoped (#8): a UUID outside this user's sections 404s -- except that a
+    # visit's own visitors may always edit it, as it is listed under "My Observations".
     sections = scoped_sections(request.user)
     visit_schedule = None
     if visit_id:
-        visit_schedule = get_object_or_404(
-            VisitSchedule.objects.filter(class_sections__in=sections).distinct(),
-            pk=visit_id,
-        )
+        visit_schedule = get_object_or_404(VisitSchedule, pk=visit_id)
+        if not _may_edit_report(request.user, visit_schedule):
+            if _in_scope(request.user, visit_schedule):
+                return _not_your_visit(request, visit_schedule)
+            raise Http404('No visit matches the given query.')
+        sections = ClassSection.objects.filter(
+            Q(pk__in=sections.values('pk'))
+            | Q(pk__in=visit_schedule.class_sections.values('pk')))
 
     # The visit is anchored to the section the faculty clicked from; the section
     # options are limited to that section's course taught by the same instructor.
@@ -187,6 +208,32 @@ def manage_visit(request, class_section_id, visit_id=None):
     })
 
 
+def _in_scope(user, visit):
+    """True when the visit touches a section in the user's course area."""
+    return visit.class_sections.filter(
+        pk__in=scoped_sections(user).values('pk')).exists()
+
+
+def _may_view_report(user, visit):
+    """Read access: its visitors and CE, plus colleagues when the setting allows."""
+    if _may_edit_report(user, visit):
+        return True
+    return faculty_can_view_others_visits() and _in_scope(user, visit)
+
+
+def _not_your_visit(request, visit):
+    """403 page naming the visit's owner(s), instead of a bare 404 (#ewu-2026-10)."""
+    can_view = _may_view_report(request.user, visit)
+    return render(request, 'class_visit/faculty/not_your_visit.html', {
+        'page_title': 'Not Your Visit',
+        'visit': visit,
+        'visitor_names': visit.visitor_names,
+        'view_report_url': reverse(
+            'faculty_class_visit:view_report', kwargs={'visit_id': visit.id},
+        ) if can_view and visit.has_report() else '',
+    }, status=403)
+
+
 def _may_edit_report(user, visit):
     """Who may write a visit's report: its visitors, or CE staff.
 
@@ -211,6 +258,9 @@ def edit_visit_report(request, visit_id):
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
 
     if not _may_edit_report(request.user, visit):
+        if _in_scope(request.user, visit):
+            # The user can already see this visit's course area: tell them why.
+            return _not_your_visit(request, visit)
         # 404, not 403: do not confirm that a visit with this id exists.
         raise Http404('No visit matches the given query.')
 
@@ -270,11 +320,41 @@ def edit_visit_report(request, visit_id):
     })
 
 
+@login_required(login_url='/')
+@xframe_options_exempt
+def view_report(request, visit_id):
+    """Read-only full report, for the visit's visitors and -- when the
+    `faculty_view_others_visits` setting is Yes -- colleagues in the course area.
+
+    Colleagues see submitted reports only; a draft is still the visitor's own.
+    """
+    visit = get_object_or_404(VisitSchedule, pk=visit_id)
+    if not _may_view_report(request.user, visit):
+        raise Http404('No visit matches the given query.')
+
+    report = visit.has_report() or None
+    if report and not report.is_submitted and not _may_edit_report(request.user, visit):
+        report = None
+
+    return render(request, 'class_visit/ce/view_report_ajax.html', {
+        'page_title': 'Class Visit Report',
+        'visit': visit,
+        'report': report,
+        'report_fields': report_fields.report_values_for_display(
+            report, public_only=False) if report else [],
+        'can_download': report is not None,
+        'pdf_url': reverse('faculty_class_visit:report_pdf', kwargs={'visit_id': visit.id}),
+        'ajax': True,
+        'payment_tracking_enabled': payment_tracking_enabled(),
+        'attachments': uploads.attachment_rows(report, 'faculty') if report else [],
+    })
+
+
 def _visit_file_or_404(request, visit_id, file_id):
     """A file on this visit's report that the user may open as a visitor or CE."""
     from ..models import VisitReportFile
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
-    if not _may_edit_report(request.user, visit):
+    if not _may_view_report(request.user, visit):
         raise Http404('No file matches the given query.')
     return get_object_or_404(
         VisitReportFile, pk=file_id, visit_report__visit_schedule=visit)
@@ -292,6 +372,8 @@ def remove_file(request, visit_id, file_id):
     """Remove a visitor attachment while the report is still a draft."""
     from ..models import VisitReportFile
     report_file = _visit_file_or_404(request, visit_id, file_id)
+    if not _may_edit_report(request.user, report_file.visit_report.visit_schedule):
+        raise Http404('No file matches the given query.')
     if (report_file.kind != VisitReportFile.FACULTY_ATTACHMENT
             or report_file.visit_report.status == 'Submitted'):
         return JsonResponse(
@@ -315,7 +397,10 @@ def report_pdf(request, visit_id):
     visit = VisitSchedule.objects.filter(
         pk=visit_id, class_sections__in=scoped_sections(request.user),
     ).distinct().first()
-    if visit is None or not visit.has_report():
+    if visit is None or not visit.has_report() or not _may_view_report(request.user, visit):
+        raise Http404('No visit report matches the given query.')
+    if not visit.report.is_submitted and not _may_edit_report(request.user, visit):
+        # A colleague's draft stays private to its visitors.
         raise Http404('No visit report matches the given query.')
 
     pdf_bytes = pdf_service.visit_letter_pdf(visit.report, public_only=False)
@@ -356,8 +441,14 @@ def do_bulk_action(request):
             class_sections__in=scoped_sections(request.user),
         ).distinct()
         # A schedule has zero or one report (OneToOneField): skip the ones with
-        # none rather than failing the whole batch.
-        reports = [v.report for v in visits if v.has_report()]
+        # none rather than failing the whole batch. Colleagues' visits only when the
+        # setting allows, and then submitted reports only -- same as view_report.
+        reports = [
+            v.report for v in visits
+            if v.has_report() and (
+                is_visitor(request.user, v)
+                or (faculty_can_view_others_visits() and v.report.is_submitted))
+        ]
         if not reports:
             return JsonResponse({'success': False, 'message': 'No reports found.'}, status=404)
 
@@ -374,8 +465,16 @@ def do_bulk_action(request):
 
 @login_required(login_url='/')
 def delete_visit(request, visit_id):
-    """Delete a VisitSchedule (only if no report exists)."""
+    """Delete a VisitSchedule (only if no report exists). Visitors and CE only."""
     visit = get_object_or_404(VisitSchedule, pk=visit_id)
+    if not _may_edit_report(request.user, visit):
+        if not _in_scope(request.user, visit):
+            raise Http404('No visit matches the given query.')
+        return JsonResponse({
+            'success': False,
+            'message': 'This visit belongs to ' + '; '.join(visit.visitor_names)
+                       + '. Only its visitor(s) can delete it.',
+        }, status=403)
 
     if getattr(visit, 'report', None):
         return JsonResponse({
@@ -399,12 +498,22 @@ def index(request):
 
     terms = Term.objects.all().order_by('-code')
     courses = Course.objects.filter(id__in=course_ids).order_by('name')
-    visitors = class_visit_administrators(course_ids).select_related('user').order_by('user__last_name')
+    can_view_others = faculty_can_view_others_visits()
+    # "By Visitor" filter for the other-faculty tab: the people who visited sections
+    # in this user's course area, each once (it used to list CourseAdministrator
+    # rows -- one per course -- so a colleague appeared several times).
+    from cis.models.customuser import CustomUser
+    visitors = CustomUser.objects.filter(
+        visitschedule__class_sections__in=scoped_sections(request.user),
+    ).exclude(pk=request.user.pk).distinct().order_by(
+        'last_name', 'first_name') if can_view_others else []
 
     return render(request, 'class_visit/faculty/visits.html', {
         'menu': menu,
         'terms': terms,
+        'term_choices': term_choices(terms),
         'active_term': get_active_term(),
+        'can_view_others': can_view_others,
         'courses': courses,
         'visitors': visitors,
         'page_title': 'Scheduled Observations',

@@ -150,6 +150,25 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
             kwargs={'visit_id': obj.id},
         )
 
+    view_report_url = serializers.SerializerMethodField()
+
+    def get_view_report_url(self, obj):
+        """Read-only report (other-faculty tab); '' until a report is submitted."""
+        if not obj.has_submitted_report:
+            return ''
+        return reverse(
+            'faculty_class_visit:view_report',
+            kwargs={'visit_id': obj.id},
+        )
+
+    teacher_display = serializers.SerializerMethodField()
+
+    def get_teacher_display(self, obj):
+        teacher = obj.teacher
+        if teacher is None:
+            return 'Not assigned'
+        return f"{teacher.user.last_name}, {teacher.user.first_name}"
+
     delete_url = serializers.SerializerMethodField()
 
     def get_delete_url(self, obj):
@@ -175,5 +194,7 @@ class FacultyVisitScheduleSerializer(serializers.ModelSerializer):
             'manage_visit_url',
             'edit_report_url',
             'report_pdf_url',
+            'view_report_url',
+            'teacher_display',
             'delete_url',
         ]

@@ -79,3 +79,18 @@ def class_visit_administrators(course_ids):
         status__iexact='active',
         role__in=CLASS_VISIT_ROLES,
     )
+
+
+def faculty_can_view_others_visits():
+    """The `faculty_view_others_visits` setting: may faculty read colleagues' visits?
+
+    When Yes, faculty get a read-only list of the visits other faculty made to
+    sections in their own course area (scoped_sections), with the full report.
+    """
+    from ..settings.class_visit import class_visit as ClassVisitSettings
+    return ClassVisitSettings.from_db().get('faculty_view_others_visits', 'No') == 'Yes'
+
+
+def is_visitor(user, visit):
+    """True when `user` is one of the visit's visitors -- i.e. it is their visit."""
+    return visit.visitors.filter(pk=user.pk).exists()

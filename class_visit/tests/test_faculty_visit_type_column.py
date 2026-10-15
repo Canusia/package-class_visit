@@ -78,6 +78,8 @@ class FacultyVisitTypeColumnTest(TestCase):
 
         self.visit = VisitSchedule.objects.create(type_of_visit='Virtual Observation')
         self.visit.class_sections.add(self.section)
+        # "My Observations" lists the visits the faculty user is a visitor on.
+        self.visit.visitors.add(self.faculty)
 
     def tearDown(self):
         user_logged_in.receivers = self._saved_receivers

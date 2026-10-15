@@ -93,7 +93,8 @@ keep that workbook in sync when you add, rename, or remove a setting. Keys:
 `instructor_confirm_link`, `notify_teacher_on_submit` + subject/message,
 `visitor_file_upload` / `visitor_file_required` / `instructor_view_visitor_files`, `instructor_file_required`,
 `visitor_reminder_subject` / `visitor_reminder_message`, `reminder_every_days`,
-`payment_tracking`, `notify_visitor_on_paid` / `visitor_paid_subject` / `visitor_paid_message`.
+`payment_tracking`, `notify_visitor_on_paid` / `visitor_paid_subject` / `visitor_paid_message`,
+`faculty_view_others_visits`.
 
 Notes on recent additions:
 - **`report_fields_json` is validated on save** (`settings/class_visit.py::clean_report_fields_json`) —
@@ -122,6 +123,16 @@ Notes on recent additions:
   `ce_manage_visit`. CE and faculty visitor choices both come from
   `services/scope.py::class_visit_administrators()` (active, `CLASS_VISIT_ROLES`). On create,
   `VisitSchedule.record_scheduler(user, 'ce'|'faculty')` writes `meta['scheduled_by_id'|'scheduled_by'|'scheduled_via']`.
+- **Faculty lists (ewu 2026-10)**: "My Observations" (`FacultyVisitScheduleViewSet`, default
+  scope) is the visits the user is a **visitor** on. `?scope=others` is colleagues' visits to
+  `scoped_sections(user)`, only when `faculty_view_others_visits` = Yes
+  (`services/scope.py::faculty_can_view_others_visits`); `views/faculty.py::view_report` is its
+  read-only report (submitted only). Editing a visit/report you are not a visitor on → 403
+  `faculty/not_your_visit.html` if it is in your course area, 404 otherwise.
+- **Term filters** go through `services/terms.py` (`filter_by_term`, `term_choices`), which wrap
+  `cis.services.term_hierarchy` with a flat fallback: a parent term includes its sub-terms.
+- A section with **no teacher** offers only itself in the scheduling forms — `teacher=None`
+  would otherwise match every unassigned section in the course.
 - The CE **View Report** opens the report in the visits-page iframe modal (`?ajax=1` → `cis/ajax-base.html`,
   `@xframe_options_exempt`).
 

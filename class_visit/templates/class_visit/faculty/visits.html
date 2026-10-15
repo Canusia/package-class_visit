@@ -16,8 +16,13 @@
             </a>
           </li>
           <li class="nav-item">
-            <a class="nav-link" data-toggle="tab" href="#all">{{ page_title }}</a>
+            <a class="nav-link" data-toggle="tab" href="#all">My Observations</a>
           </li>
+          {% if can_view_others %}
+          <li class="nav-item">
+            <a class="nav-link" data-toggle="tab" href="#others">Other Faculty's Observations</a>
+          </li>
+          {% endif %}
         </ul>
 
         <div class="tab-content">
@@ -31,9 +36,9 @@
                     <form id="class_section_filter" class="form-inline float-right filter">
                       <select class="form-control mt-2" name="term_id">
                         <option value="">By Term</option>
-                        {% for term in terms %}
-                        <option value="{{ term.id }}"
-                          {% if term == active_term %}selected{% endif %}>{{ term }}</option>
+                        {% for tid, tlabel in term_choices %}
+                        <option value="{{ tid }}"
+                          {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
                         {% endfor %}
                       </select>
                       &nbsp;
@@ -72,16 +77,9 @@
                     <form id="visit_filter" class="form-inline float-right filter">
                       <select class="form-control mt-2" name="term_id">
                         <option value="">By Term</option>
-                        {% for term in terms %}
-                        <option value="{{ term.id }}"
-                          {% if term == active_term %}selected{% endif %}>{{ term }}</option>
-                        {% endfor %}
-                      </select>
-                      &nbsp;
-                      <select class="form-control mt-2" name="visitor_id">
-                        <option value="">By Visitor</option>
-                        {% for v in visitors %}
-                        <option value="{{ v.user.id }}">{{ v.user.last_name }}, {{ v.user.first_name }}</option>
+                        {% for tid, tlabel in term_choices %}
+                        <option value="{{ tid }}"
+                          {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
                         {% endfor %}
                       </select>
                     </form>
@@ -127,6 +125,50 @@
             </div>
           </div>
 
+          {% if can_view_others %}
+          {# ── Tab: Other faculty's observations (read-only) ── #}
+          <div class="tab-pane" id="others">
+            <div class="bg-white border border-top-0">
+              <div class="col-12 pt-3 mb-3">
+                <div class="card mb-3">
+                  <div class="card-body bg-gray-200">
+                    <form id="others_filter" class="form-inline float-right filter">
+                      <select class="form-control mt-2" name="term_id">
+                        <option value="">By Term</option>
+                        {% for tid, tlabel in term_choices %}
+                        <option value="{{ tid }}"
+                          {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
+                        {% endfor %}
+                      </select>
+                      &nbsp;
+                      <select class="form-control mt-2" name="visitor_id">
+                        <option value="">By Visitor</option>
+                        {% for v in visitors %}
+                        <option value="{{ v.id }}">{{ v.last_name }}, {{ v.first_name }}</option>
+                        {% endfor %}
+                      </select>
+                    </form>
+                  </div>
+                </div>
+
+                <table id="records_others" class="table table-striped responsive" style="width:100%">
+                  <thead>
+                    <tr>
+                      <th data-data="visit_date" data-name="visit_date">Visit Date</th>
+                      <th data-data="type_of_visit" data-name="type_of_visit">Type</th>
+                      <th data-data="class_sections" searchable="0" data-name="class_sections">Class Section(s)</th>
+                      <th data-data="teacher_display" searchable="0" data-name="teacher_display">Instructor</th>
+                      <th data-data="visitors" searchable="0" data-name="visitors">Visitor(s)</th>
+                      <th data-data="report_status" searchable="0" data-name="report_status">Report Status</th>
+                      <th data-data="id" searchable="0" data-name="id">Actions</th>
+                    </tr>
+                  </thead>
+                </table>
+              </div>
+            </div>
+          </div>
+          {% endif %}
+
         </div>{# end tab-content #}
 
         <script>
@@ -144,7 +186,7 @@
           /* ── Schedulable Sections DataTable ── */
           var section_baseURL = '{{ class_sections_api_url }}';
           tbl_class_sections = $('#records_class_sections').DataTable({
-            ajax: section_baseURL,
+            ajax: section_baseURL + '&' + $('#class_section_filter').serialize(),
             serverSide: true,
             processing: true,
             order: [[0, 'desc']],
@@ -257,7 +299,7 @@
           }});
 
           tbl_visits = $('#records_all').DataTable({
-            ajax: visit_baseURL,
+            ajax: visit_baseURL + '&' + $('#visit_filter').serialize(),
             serverSide: true,
             processing: true,
             order: [[1, 'desc']],
@@ -270,6 +312,53 @@
             var params = $('#visit_filter').serialize();
             tbl_visits.ajax.url(visit_baseURL + '&' + params).load();
           });
+
+          /* ── Other faculty's observations (read-only) ── */
+          var tbl_others = null;
+          if ($('#records_others').length) {
+            var others_baseURL = visit_baseURL + '&scope=others';
+            tbl_others = $('#records_others').DataTable({
+              ajax: others_baseURL + '&' + $('#others_filter').serialize(),
+              serverSide: true,
+              processing: true,
+              order: [[0, 'desc']],
+              lengthMenu: [30, 50, 100],
+              language: { loadingRecords: '&nbsp;' },
+              columns: [
+                { render: function(d, t, row) { return row.visit_date || '-'; } },
+                { render: function(d, t, row) { return esc(row.type_of_visit) || '-'; } },
+                { orderable: false, render: function(d, t, row) {
+                    var s = '';
+                    $.each(row.class_sections || [], function(i, sec) {
+                      s += esc(sec.course.name) + ' (' + esc(sec.class_number) + '-' + esc(sec.section_number) + ')<br>';
+                    });
+                    return s;
+                }},
+                { orderable: false, render: function(d, t, row) { return esc(row.teacher_display); } },
+                { orderable: false, render: function(d, t, row) {
+                    var v = '';
+                    $.each(row.visitors || [], function(i, vis) {
+                      v += esc(vis.first_name) + ' ' + esc(vis.last_name) + '<br>';
+                    });
+                    return v;
+                }},
+                { orderable: false, render: function(d, t, row) {
+                    var s = row.report_status;
+                    if (s === 'Submitted') return '<span class="badge badge-success">Submitted</span>';
+                    if (s === 'Draft') return '<span class="badge badge-warning">Draft</span>';
+                    return '<span class="badge badge-secondary">No Report</span>';
+                }},
+                { orderable: false, render: function(d, t, row) {
+                    if (!row.view_report_url) return '';
+                    return '<a href="#" class="btn btn-sm btn-info ajax-open-modal" data-src="'
+                      + row.view_report_url + '">View Report</a>';
+                }},
+              ]
+            });
+            $(document).on('change', '#others_filter :input', function() {
+              tbl_others.ajax.url(others_baseURL + '&' + $('#others_filter').serialize()).load();
+            });
+          }
 
           /* ── Select-all checkbox ── */
           $(document).on('change', '#select_all_visits', function() {
@@ -326,6 +415,8 @@
               } else {
                 alert(data.message);
               }
+            }).fail(function(xhr) {
+              alert((xhr.responseJSON && xhr.responseJSON.message) || 'Could not delete this visit.');
             });
           });
 

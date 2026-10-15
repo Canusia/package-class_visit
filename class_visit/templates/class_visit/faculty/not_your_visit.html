@@ -1,0 +1,38 @@
+{% comment %}
+Shown (403) when a faculty user opens the edit form for a visit or report that
+belongs to someone else -- in their course area, but they are not a visitor.
+Rendered standalone because it loads inside the faculty visits iframe modal.
+
+Context: visit, visitor_names, view_report_url ('' when they may not read it)
+{% endcomment %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+  <title>{{ page_title }}</title>
+  {% load static brand %}
+  <link rel="stylesheet" href="https://stackpath.bootstrapcdn.com/bootstrap/4.3.1/css/bootstrap.min.css">
+  <link rel="stylesheet" href="https://use.fontawesome.com/releases/v5.8.1/css/all.css">
+  <link rel="stylesheet" href="{% static 'css/sb-admin-2.min.css' %}">
+  <link rel="stylesheet" href="{% static 'css/style.css' %}">
+  {% brand_css %}
+</head>
+<body class="bg-white">
+  <div class="p-3">
+    <div class="alert alert-warning">
+      <h5 class="alert-heading"><i class="fas fa-lock"></i>&nbsp;You can't edit this visit</h5>
+      <p class="mb-1">
+        This visit on {{ visit.visit_date_sexy }} belongs to
+        <strong>{% for name in visitor_names %}{{ name }}{% if not forloop.last %}; {% endif %}{% empty %}another faculty member{% endfor %}</strong>.
+      </p>
+      <p class="mb-0">Only a visit's own visitor(s) can change the visit or write its report.</p>
+    </div>
+    {% if view_report_url %}
+    <a href="{{ view_report_url }}" class="btn btn-sm btn-info">View Report (read-only)</a>
+    {% endif %}
+    <button type="button" class="btn btn-sm btn-secondary"
+            onclick="window.parent.closeVisitModal && window.parent.closeVisitModal()">Close</button>
+  </div>
+</body>
+</html>

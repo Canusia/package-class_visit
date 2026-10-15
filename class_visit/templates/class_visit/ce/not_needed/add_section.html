@@ -7,8 +7,8 @@
   <form id="frm_nn_picker_filter" class="form-inline">
     <select name="term" class="form-control mr-2 mb-2">
       <option value="">All Terms</option>
-      {% for t in terms %}
-        <option value="{{ t.id }}">{{ t.label }} {{ t.year }}</option>
+      {% for tid, tlabel in term_choices %}
+        <option value="{{ tid }}">{{ tlabel }}</option>
       {% endfor %}
     </select>
     <select name="course" class="form-control mr-2 mb-2">

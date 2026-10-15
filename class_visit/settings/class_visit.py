@@ -299,6 +299,21 @@ class class_visit(forms.Form):
         widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
     )
 
+    faculty_view_others_visits = forms.ChoiceField(
+        choices=YES_NO,
+        label='Faculty Can See Other Faculty\'s Visits',
+        # Existing tenants have no stored value; don't let the form default to Yes.
+        initial='No',
+        required=False,
+        help_text=(
+            'When Yes, faculty get a read-only "Other Faculty\'s Observations" tab listing '
+            'the visits colleagues made to sections in their own course area, and can open '
+            'those submitted reports (all fields). They can never edit them. When No, '
+            'faculty see only the visits they are a visitor on.'
+        ),
+        widget=forms.Select(attrs={'class': 'col-md-4 col-sm-12'}),
+    )
+
     # ---- Visitor reminder ----
     visitor_reminder_subject = forms.CharField(
         max_length=500,
@@ -575,6 +590,7 @@ class class_visit(forms.Form):
             'is_active': 'No',
             'debug_email_list': '',
             'payment_tracking': 'No',
+            'faculty_view_others_visits': 'No',
             'notify_visitor_on_paid': 'No',
             'visitor_paid_subject': 'Class Visit Payment Processed',
             'visitor_paid_message': '',

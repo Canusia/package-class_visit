@@ -105,10 +105,15 @@ class FacultyScopeTest(TestCase):
         return user
 
     def _visit_ids(self, user):
+        # Course-area scoping now governs the read-only "other faculty's visits"
+        # list (scope=others); a user's own list is the visits they are a visitor on.
+        from cis.models.settings import Setting
+        Setting.objects.update_or_create(
+            key='class_visit', defaults={'value': {'faculty_view_others_visits': 'Yes'}})
         client = Client(REMOTE_ADDR='127.0.0.1')
         client.force_login(user)
         resp = client.get(
-            '/faculty/class_visits/api/visit_schedule/?format=json')
+            '/faculty/class_visits/api/visit_schedule/?format=json&scope=others')
         self.assertEqual(resp.status_code, 200, resp.content[:200])
         rows = resp.json()
         rows = rows['results'] if isinstance(rows, dict) else rows

@@ -53,6 +53,20 @@ class VisitScheduleForm(forms.Form):
         help_text='Visible only to visitors',
         widget=forms.Textarea(attrs={'rows': 3}),
     )
+    # Asked before the visitor list: the scheduling faculty is pre-checked, and the
+    # other faculty for the course are only shown (and kept) when this is Yes.
+    has_other_visitors = forms.ChoiceField(
+        choices=[('No', 'No'), ('Yes', 'Yes')],
+        required=False,
+        initial='No',
+        label='Are there other visitors?',
+        widget=forms.RadioSelect,
+    )
+
+    field_order = [
+        'class_sections', 'has_other_visitors', 'visitors',
+        'visit_date', 'type_of_visit', 'pre_visit_note',
+    ]
 
     def __init__(self, faculty_user, visit_schedule=None, anchor_section=None,
                  *args, **kwargs):
@@ -95,11 +109,21 @@ class VisitScheduleForm(forms.Form):
         # at the same high school as the section the visit is being managed from
         # (a visit's sections must share one instructor and one high school).
         if anchor_section is not None:
-            sections_qs = sections_qs.filter(
-                course_id=anchor_section.course_id,
-                teacher_id=anchor_section.teacher_id,
-                highschool_id=anchor_section.highschool_id,
-            )
+            if anchor_section.teacher_id is None:
+                # No instructor: offer only this section, not every unassigned one.
+                sections_qs = sections_qs.filter(pk=anchor_section.pk)
+            else:
+                sections_qs = sections_qs.filter(
+                    course_id=anchor_section.course_id,
+                    teacher_id=anchor_section.teacher_id,
+                    highschool_id=anchor_section.highschool_id,
+                )
+        if visit_schedule is not None:
+            # Sections already on the visit stay selectable, or saving would drop them.
+            keep_ids = set(sections_qs.values_list('pk', flat=True)) | set(
+                visit_schedule.class_sections.values_list('pk', flat=True))
+            sections_qs = ClassSection.objects.filter(pk__in=keep_ids).select_related(
+                'teacher__user', 'course', 'term', 'highschool')
 
         sections = list(sections_qs)
 
@@ -135,6 +159,13 @@ class VisitScheduleForm(forms.Form):
             visitor_choices.append(
                 (str(ca.user.id), f'{ca.user.last_name}, {ca.user.first_name}')
             )
+        if visit_schedule is not None:
+            # People already on the visit stay selectable, or saving would drop them.
+            for user in visit_schedule.visitors.order_by('last_name', 'first_name'):
+                if user.id not in seen_user_ids:
+                    seen_user_ids.add(user.id)
+                    visitor_choices.append(
+                        (str(user.id), f'{user.last_name}, {user.first_name}'))
         self.fields['visitors'].choices = visitor_choices
 
         # Pre-populate for edit
@@ -151,9 +182,24 @@ class VisitScheduleForm(forms.Form):
             self.fields['visitors'].initial = [
                 str(u.id) for u in visit_schedule.visitors.all()
             ]
-        elif anchor_section is not None:
-            # New visit: pre-select the section it was launched from.
-            self.fields['class_sections'].initial = [str(anchor_section.id)]
+            if visit_schedule.visitors.exclude(pk=faculty_user.pk).exists():
+                self.fields['has_other_visitors'].initial = 'Yes'
+        else:
+            # New visit: the scheduling faculty is a visitor unless they untick it.
+            if str(faculty_user.id) in {c[0] for c in visitor_choices}:
+                self.fields['visitors'].initial = [str(faculty_user.id)]
+            if anchor_section is not None:
+                # Pre-select the section it was launched from.
+                self.fields['class_sections'].initial = [str(anchor_section.id)]
+
+    def clean_visitors(self):
+        """With "other visitors" = No, only the scheduling faculty is kept."""
+        ids = self.cleaned_data.get('visitors', [])
+        if self.data.get('has_other_visitors') == 'No':
+            ids = [i for i in ids if i == str(self._faculty_user.id)]
+        if not ids:
+            raise ValidationError('Select at least one visitor.')
+        return ids
 
     def clean_class_sections(self):
         """Validate teacher-match, not-needed, and status constraints."""

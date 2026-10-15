@@ -107,8 +107,9 @@ class EditVisitReportAuthzTest(TestCase):
         self.assertEqual(self.client.get(self._url()).status_code, 404)
 
     def test_course_administrator_who_is_not_a_visitor_is_refused(self):
+        # In their course area, so they are told whose visit it is (403), not 404.
         self.client.force_login(self.course_admin)
-        self.assertEqual(self.client.get(self._url()).status_code, 404)
+        self.assertEqual(self.client.get(self._url()).status_code, 403)
 
     def test_unrelated_faculty_cannot_post_a_report(self):
         self.client.force_login(self.other_faculty)

@@ -156,6 +156,7 @@ $(document).ready(function () {
                 d.format = 'datatables';
                 d.term_id = $('#frm_visits_filter select[name=term]').val();
                 d.course_id = $('#frm_visits_filter select[name=course]').val();
+                d.visitor_id = $('#frm_visits_filter select[name=visitor]').val();
                 d.report_status = $('#frm_visits_filter select[name=report_status]').val();
             },
         },

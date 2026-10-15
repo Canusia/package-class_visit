@@ -63,6 +63,30 @@
   <script src="https://cdnjs.cloudflare.com/ajax/libs/bootstrap-datepicker/1.8.0/js/bootstrap-datepicker.min.js" integrity="sha512-cOGL6gI01KK2Bws211W8S3COhzrorBbzKvLPWYOVtSEYet3yG1fzJrimtwh8rUyvMy9qjgY2e7Rt6IwyaiX1Mg==" crossorigin="anonymous"></script>
   <script>
     jQuery(function ($) {
+      /* The scheduling faculty is pre-checked; everyone else in the visitor list
+         shows only after "Are there other visitors?" = Yes. */
+      var me = '{{ request.user.id }}';
+      function syncOtherVisitors() {
+        var yes = $('input[name=has_other_visitors]:checked').val() === 'Yes';
+        if (!$('input[name=visitors][value="' + me + '"]').length) {
+          // Not a visitor candidate themselves: the question does not apply.
+          $('#div_id_has_other_visitors').hide();
+          $('input[name=has_other_visitors][value=Yes]').prop('checked', true);
+          yes = true;
+        } else if ($('input[name=visitors]').length === 1) {
+          // Nobody else to pick.
+          $('#div_id_has_other_visitors').hide();
+        }
+        $('input[name=visitors]').each(function () {
+          if (this.value === me) return;
+          var row = $(this).closest('.form-check, .custom-control, div');
+          row.toggle(yes);
+          if (!yes) this.checked = false;
+        });
+      }
+      $(document).on('change', 'input[name=has_other_visitors]', syncOtherVisitors);
+      syncOtherVisitors();
+
       $('#id_visit_date').datepicker({
         format: 'mm/dd/yyyy',
         autoclose: true,

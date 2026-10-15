@@ -41,16 +41,20 @@
             <form id="frm_visits_filter" class="form-inline float-right">
               <select class="form-control mr-2" name="term">
                 <option value="">All Terms</option>
-                {% for t in terms %}
-                  <option value="{{ t.id }}" {% if t.id == active_term.id %}selected{% endif %}>
-                    {{ t.label }} {{ t.year }}
-                  </option>
+                {% for tid, tlabel in term_choices %}
+                  <option value="{{ tid }}" {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
                 {% endfor %}
               </select>
               <select class="form-control mr-2" name="course">
                 <option value="">All Courses</option>
                 {% for c in courses %}
                   <option value="{{ c.id }}">{{ c.name }}</option>
+                {% endfor %}
+              </select>
+              <select class="form-control mr-2" name="visitor">
+                <option value="">All Faculty</option>
+                {% for f in faculty %}
+                  <option value="{{ f.id }}">{{ f.last_name }}, {{ f.first_name }}</option>
                 {% endfor %}
               </select>
               <select class="form-control mr-2" name="report_status">
@@ -130,10 +134,8 @@
             <form id="frm_nn_filter" class="form-inline float-right">
               <select class="form-control mr-2" name="term">
                 <option value="">All Terms</option>
-                {% for t in terms %}
-                  <option value="{{ t.id }}" {% if t.id == active_term.id %}selected{% endif %}>
-                    {{ t.label }} {{ t.year }}
-                  </option>
+                {% for tid, tlabel in term_choices %}
+                  <option value="{{ tid }}" {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
                 {% endfor %}
               </select>
               <select class="form-control mr-2" name="course">

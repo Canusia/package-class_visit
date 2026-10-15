@@ -64,6 +64,11 @@ other portal's menu entry.
 - [ ] Yes — instructors see their visits and the public portion of each report
 - [ ] No — visits and reports stay internal to CE/faculty
 
+**1.4** Faculty always see the visits they are a visitor on, and only a visit's own visitors can change it or write its report. Should faculty also see, read-only, the visits **other faculty** made to sections in their course area, including the full submitted report? *(Setting: Faculty Can See Other Faculty's Visits.)*
+
+- [ ] Yes — faculty get a read-only "Other Faculty's Observations" tab
+- [ ] No — faculty see only their own visits *(default)*
+
 ---
 
 ## Section 2 — Visit Types

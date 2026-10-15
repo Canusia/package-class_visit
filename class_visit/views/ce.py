@@ -13,6 +13,7 @@ from rest_framework import viewsets
 
 from cis.menu import draw_menu
 from cis.models.course import Course
+from cis.models.customuser import CustomUser
 from cis.models.section import ClassSection
 from cis.models.term import Term
 from cis.utils import CIS_user_only, active_term, user_has_cis_role
@@ -29,6 +30,7 @@ from ..services import emails as email_service
 from ..services.payment import payment_tracking_enabled
 from ..services import uploads
 from ..services.section_scope import status_filter_to_db
+from ..services.terms import filter_by_term, term_choices
 from ..settings.class_visit import class_visit as ClassVisitSettings
 
 logger = logging.getLogger(__name__)
@@ -83,7 +85,7 @@ class CEVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
         report_status = self.request.GET.get('report_status')
 
         if term_id:
-            qs = qs.filter(class_sections__term__id=term_id)
+            qs = filter_by_term(qs, term_id, field='class_sections__term')
         if academic_year_id:
             qs = qs.filter(class_sections__term__academic_year__id=academic_year_id)
         if class_section_id:
@@ -126,7 +128,7 @@ class CENotNeededVisitViewSet(viewsets.ReadOnlyModelViewSet):
         course_id = self.request.GET.get('course_id')
 
         if term_id:
-            qs = qs.filter(class_section__term__id=term_id)
+            qs = filter_by_term(qs, term_id, field='class_section__term')
         if course_id:
             qs = qs.filter(class_section__course__id=course_id)
 
@@ -148,7 +150,11 @@ def index(request):
             'menu': menu,
             'page_title': 'Class Visits / Reports',
             'terms': Term.objects.all().order_by('code'),
+            'term_choices': term_choices(Term.objects.all().order_by('-code')),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),
+            # Faculty filter: everyone who has been named a visitor on a visit.
+            'faculty': CustomUser.objects.filter(
+                visitschedule__isnull=False).distinct().order_by('last_name', 'first_name'),
             'active_term': active_term(),
             'api_url': '/ce/class_visits/api/visit_schedule/?format=datatables',
             'not_needed_api_url': '/ce/class_visits/api/not_needed_visit/?format=datatables',
@@ -359,7 +365,7 @@ def not_needed_picker(request):
     ).select_related('course', 'teacher', 'highschool', 'term')
 
     if term_id:
-        sections = sections.filter(term__id=term_id)
+        sections = filter_by_term(sections, term_id)
     if course_id:
         sections = sections.filter(course__id=course_id)
 
@@ -372,6 +378,7 @@ def not_needed_picker(request):
             'page_title': 'Add to Not-Needed List',
             'sections': sections,
             'terms': Term.objects.all().order_by('code'),
+            'term_choices': term_choices(Term.objects.all().order_by('-code')),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),
         },
     )
@@ -399,7 +406,7 @@ def schedule_picker(request):
     ).select_related('course', 'teacher__user', 'highschool', 'term')
 
     if term_id:
-        sections = sections.filter(term__id=term_id)
+        sections = filter_by_term(sections, term_id)
     if course_id:
         sections = sections.filter(course__id=course_id)
 
@@ -414,6 +421,7 @@ def schedule_picker(request):
             'term_id': term_id or '',
             'course_id': course_id or '',
             'terms': Term.objects.all().order_by('code'),
+            'term_choices': term_choices(Term.objects.all().order_by('-code')),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),
         },
     )

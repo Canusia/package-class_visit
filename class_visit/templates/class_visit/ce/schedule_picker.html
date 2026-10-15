@@ -11,8 +11,8 @@
   <form id="frm_schedule_picker_filter" class="form-inline" method="get">
     <select name="term_id" class="form-control mr-2 mb-2">
       <option value="">All Terms</option>
-      {% for t in terms %}
-        <option value="{{ t.id }}" {% if t.id|stringformat:"s" == term_id %}selected{% endif %}>{{ t.label }} {{ t.year }}</option>
+      {% for tid, tlabel in term_choices %}
+        <option value="{{ tid }}" {% if tid == term_id %}selected{% endif %}>{{ tlabel }}</option>
       {% endfor %}
     </select>
     <select name="course_id" class="form-control mr-2 mb-2">

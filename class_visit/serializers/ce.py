@@ -34,7 +34,8 @@ class CEVisitScheduleSerializer(serializers.ModelSerializer):
     def get_teacher_display(self, obj):
         teacher = obj.teacher
         if teacher is None:
-            return ''
+            # No instructor on the section(s) -- say so rather than leave a blank cell.
+            return 'Not assigned'
         try:
             return f"{teacher.user.last_name}, {teacher.user.first_name}"
         except Exception:
