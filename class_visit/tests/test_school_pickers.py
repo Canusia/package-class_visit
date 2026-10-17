@@ -3,10 +3,18 @@
 scope_highschools (any link status), not the Active-only picker."""
 from types import SimpleNamespace
 
+import unittest
 import uuid
 
 from django.conf import settings
 from django.test import TestCase, override_settings
+
+from ..compat import has_module
+
+if not (has_module('cis.highschool_scope') and has_module('cis.campus_context')):
+    # In-repo cis without campus-linked schools (#20); compat fallback is
+    # covered by test_cis_compat.
+    raise unittest.SkipTest('cis without campus-scoped schools')
 
 from cis.campus_context import campus_context
 from cis.models.course import Campus

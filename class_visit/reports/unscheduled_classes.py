@@ -12,7 +12,7 @@ from crispy_forms.layout import Submit
 
 from cis.models.term import Term
 from cis.models.highschool import HighSchool
-from cis.highschool_scope import scope_highschools
+from ..compat import scope_highschools
 
 
 class unscheduled_classes(forms.Form):

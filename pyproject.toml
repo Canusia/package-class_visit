@@ -9,9 +9,13 @@ description = "MyCE - Class Visit"
 requires-python = ">=3.8"
 # Dependencies live here, not in setup.cfg: with a [project] table that does
 # not list them (or mark them dynamic), setuptools ignores install_requires.
-# myce_cis>=0.1.5a: templates load the `brand` tag library (package-cis #61);
-# an older cis is a TemplateSyntaxError at render time.
+# myce_cis is optional (#20): tenants that keep cis in their own repo install
+# without it, and class_visit falls back where a cis module is missing (see
+# class_visit/compat.py and templatetags/class_visit_brand.py).
 dependencies = [
     "Django>=3.2",
-    "myce_cis>=0.1.7a",
 ]
+
+[project.optional-dependencies]
+# Multi-campus cis (brand tags, campus-scoped schools, term hierarchy).
+campus = ["myce_cis>=0.1.7a"]

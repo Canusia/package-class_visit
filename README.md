@@ -22,6 +22,14 @@ Each role has its own DRF router under `…/api/` (DataTables server-side). Mode
 
 A MyCE tenant providing the host `cis` app plus: `setting`, `report`, `django-mailer`, `djangorestframework`, `rest_framework_datatables`, and `pdfkit` (with the `wkhtmltopdf` binary, for PDF letters). Python ≥ 3.8, Django ≥ 3.2. Faculty scoping honours cis's faculty→teacher mapping (`FacultyTeacherAssignment`) when the host `cis` has it (package-cis ≥ v0.0.20); on an older `cis` it falls back to course-only scoping.
 
+`myce_cis` is **not** a required dependency, so the package installs on tenants that keep `cis` in their own repo. Multi-campus tenants can install the `campus` extra (`myce_class_visit[campus]`, which requires `myce_cis>=0.1.7a`). Where a `cis` module is missing, class_visit falls back (`class_visit/compat.py`):
+
+| Missing in the host `cis` | Fallback |
+|---|---|
+| `cis.templatetags.brand` (campus branding) | Templates load `class_visit_brand`, whose tags render nothing |
+| `cis.highschool_scope` | Unscheduled Classes report lists every school |
+| `cis.services.term_hierarchy` | Flat term list; a term filter matches that term only |
+
 ---
 
 ## Installation
