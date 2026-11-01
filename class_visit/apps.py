@@ -53,6 +53,7 @@ class ClassVisitConfig(AppConfig):
 
     def ready(self):
         from . import signals  # noqa
+        from . import menu  # noqa: F401  sidebar items (cis.menu_registry)
 
 
 class DevClassVisitConfig(AppConfig):
@@ -70,3 +71,4 @@ class DevClassVisitConfig(AppConfig):
 
     def ready(self):
         from . import signals  # noqa
+        from . import menu  # noqa: F401  sidebar items (cis.menu_registry)
