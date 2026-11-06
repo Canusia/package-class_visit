@@ -148,3 +148,77 @@ class OlderCisFallbackTests(_Fixture):
             self.assertEqual(self.visit.instructor_emails, [self.t1.user.email])
             self.assertFalse(VisitSchedule.objects.filter(
                 compat.teacher_visits_q(self.t2)).exists())
+
+
+class SignOffAndFilesTests(_Fixture):
+    """A secondary teacher may read a visit's report and files (CLASS_VISITS)
+    but only a primary teacher signs off (product call, cis#154)."""
+
+    def setUp(self):
+        super().setUp()
+        import tempfile
+        from django.core.files.base import ContentFile
+        from django.core.files.storage import FileSystemStorage
+        from ..models import VisitReportFile
+
+        field = VisitReportFile._meta.get_field('file')
+        patcher = patch.object(
+            field, 'storage', FileSystemStorage(location=tempfile.mkdtemp()))
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        patcher = patch(f'{PKG}.settings.class_visit.class_visit.from_db',
+                        return_value={'instructor_signature': 'Yes',
+                                      'instructor_view_visitor_files': 'Yes'})
+        patcher.start()
+        self.addCleanup(patcher.stop)
+
+        self.report = VisitReport.objects.create(
+            visit_schedule=self.visit, status='Submitted', meta={})
+        self.file = VisitReportFile(
+            visit_report=self.report, kind=VisitReportFile.INSTRUCTOR_RESPONSE,
+            uploaded_by=self.t1.user)
+        self.file.file.save('notes.pdf', ContentFile(b'data'), save=True)
+
+    def _sign(self, teacher):
+        self.client.force_login(teacher.user)
+        return self.client.post(
+            reverse('instructor_class_visit:sign_report',
+                    kwargs={'visit_id': self.visit.id}),
+            {'instructor_signature': teacher.user.first_name,
+             'instructor_response': 'noted'})
+
+    def test_secondary_cannot_sign_even_when_allowed(self):
+        self._allow()
+        self.assertEqual(self._sign(self.t2).status_code, 404)
+        self.report.refresh_from_db()
+        self.assertFalse(self.report.instructor_signature)
+        self.assertFalse(self.report.instructor_response)
+
+    def test_primary_signs(self):
+        self._allow()
+        self.assertEqual(self._sign(self.t1).status_code, 302)
+        self.report.refresh_from_db()
+        self.assertEqual(self.report.instructor_signature, 'T1')
+
+    def test_signoff_panel_hidden_for_secondary(self):
+        self._allow()
+        url = reverse('instructor_class_visit:report_detail',
+                      kwargs={'visit_id': self.visit.id})
+        with patch(f'{PKG}.views.instructor.draw_menu', return_value=''):
+            self.client.force_login(self.t2.user)
+            self.assertFalse(self.client.get(url).context['show_signoff'])
+            self.client.force_login(self.t1.user)
+            self.assertTrue(self.client.get(url).context['show_signoff'])
+
+    def _download(self, teacher):
+        self.client.force_login(teacher.user)
+        return self.client.get(reverse(
+            'instructor_class_visit:download_file',
+            kwargs={'visit_id': self.visit.id, 'file_id': self.file.id}))
+
+    def test_secondary_download_follows_the_setting(self):
+        self.assertEqual(self._download(self.t2).status_code, 404)
+        self._allow()
+        self.assertEqual(self._download(self.t2).status_code, 200)
+        self.assertEqual(self._download(self.t3).status_code, 404)

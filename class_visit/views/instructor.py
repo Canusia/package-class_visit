@@ -41,6 +41,14 @@ def _signoff_enabled():
     return CVSettings.from_db().get('instructor_signature', 'No') == 'Yes'
 
 
+def _signs_for(visit, teacher):
+    """Only a primary teacher of one of the visit's sections signs off; a
+    secondary teacher may see the visit but never pre-empts the write-once
+    instructor_signature (cis#154)."""
+    return VisitSchedule.objects.filter(
+        pk=visit.pk, class_sections__teacher=teacher).exists()
+
+
 def _get_teacher_or_none(request):
     """Return the Teacher for the logged-in user, or None."""
     try:
@@ -160,9 +168,10 @@ def report_detail(request, visit_id):
         'report': report,
         # Sign-off panel: only for a submitted report, and only when the tenant
         # has opted in (#14). Advisory -- it gates nothing else on this page.
+        # Primary teachers only (cis#154).
         'show_signoff': bool(
             report and report.status == 'Submitted'
-            and _signoff_enabled()),
+            and _signoff_enabled() and _signs_for(visit, teacher)),
         'sign_url': reverse(
             'instructor_class_visit:sign_report', kwargs={'visit_id': visit.id}),
         'pdf_url': reverse(
@@ -279,8 +288,10 @@ def sign_report(request, visit_id):
     if teacher is None:
         raise Http404('No visit matches the given query.')
 
+    # The visit's primary teacher(s) only: a secondary teacher may read the
+    # report (CLASS_VISITS) but not sign or respond to it (cis#154).
     visit = VisitSchedule.objects.filter(
-        teacher_visits_q(teacher), pk=visit_id).distinct().first()
+        pk=visit_id, class_sections__teacher=teacher).distinct().first()
     report = visit.has_report() if visit else None
     if not report or report.status != 'Submitted':
         raise Http404('No submitted report matches the given query.')
