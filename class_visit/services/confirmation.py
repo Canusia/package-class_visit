@@ -33,8 +33,12 @@ def confirm_visit(token: str):
     """
     from ..models import VisitSchedule
 
+    from .visit_types import visible_q
+
+    # A visit whose type is hidden from instructors (#21) treats its link as
+    # invalid, including one sent before the type was hidden.
     try:
-        vs = VisitSchedule.objects.get(meta__confirmation_token=token)
+        vs = VisitSchedule.objects.filter(visible_q()).get(meta__confirmation_token=token)
     except VisitSchedule.DoesNotExist:
         return None
 

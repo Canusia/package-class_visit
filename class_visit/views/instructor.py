@@ -28,6 +28,7 @@ from ..services import report_fields as rf_service
 from ..services.confirmation import confirm_visit as svc_confirm
 from ..services.pdf import visit_letter_pdf, visit_letters_pdf
 from ..services import uploads
+from ..services.visit_types import visible_q
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +73,7 @@ class InstructorVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
 
         return (
             VisitSchedule.objects
-            .filter(teacher_visits_q(teacher))
+            .filter(teacher_visits_q(teacher), visible_q())
             .prefetch_related(
                 'class_sections',
                 'class_sections__course',
@@ -124,7 +125,7 @@ def report_detail(request, visit_id):
 
     visit = get_object_or_404(
         VisitSchedule.objects.filter(
-            teacher_visits_q(teacher),
+            teacher_visits_q(teacher), visible_q(),
         ).prefetch_related(
             'visitors',
             'class_sections__course',
@@ -200,7 +201,7 @@ def download_file(request, visit_id, file_id):
     if teacher is None:
         raise Http404('No file matches the given query.')
     visit = VisitSchedule.objects.filter(
-        teacher_visits_q(teacher), pk=visit_id).distinct().first()
+        teacher_visits_q(teacher), visible_q(), pk=visit_id).distinct().first()
     report = visit.has_report() if visit else None
     if not report:
         raise Http404('No file matches the given query.')
@@ -223,7 +224,7 @@ def report_pdf(request, visit_id):
         raise Http404
 
     visit = get_object_or_404(
-        VisitSchedule.objects.filter(teacher_visits_q(teacher)).distinct(),
+        VisitSchedule.objects.filter(teacher_visits_q(teacher), visible_q()).distinct(),
         pk=visit_id,
     )
 
@@ -291,7 +292,7 @@ def sign_report(request, visit_id):
     # The visit's primary teacher(s) only: a secondary teacher may read the
     # report (CLASS_VISITS) but not sign or respond to it (cis#154).
     visit = VisitSchedule.objects.filter(
-        pk=visit_id, class_sections__teacher=teacher).distinct().first()
+        visible_q(), pk=visit_id, class_sections__teacher=teacher).distinct().first()
     report = visit.has_report() if visit else None
     if not report or report.status != 'Submitted':
         raise Http404('No submitted report matches the given query.')
@@ -357,6 +358,7 @@ def do_bulk_action(request):
         VisitSchedule.objects
         .filter(
             teacher_visits_q(teacher),
+            visible_q(),
             pk__in=ids,
         )
         .distinct()

@@ -51,6 +51,20 @@ def instructor_report_url(visit_schedule) -> str:
                          visit_id=visit_schedule.id)
 
 
+def office_report_url(visit_schedule, cfg=None) -> str:
+    """The office copy's report link. Unchanged (the instructor page) unless
+    the visit's type is hidden from instructors (#21), where that page would
+    404: then the CE report page for a generic office address, or the faculty
+    report page for course administrators (faculty users)."""
+    from .visit_types import instructor_visible
+    cfg = _get_settings() if cfg is None else cfg
+    if instructor_visible(visit_schedule, cfg):
+        return instructor_report_url(visit_schedule)
+    if cfg.get('notify_target', 'course_administrator') == 'generic_email':
+        return _absolute_url('class_visit:ce_view_report', visit_id=visit_schedule.id)
+    return _absolute_url('faculty_class_visit:view_report', visit_id=visit_schedule.id)
+
+
 def visitor_report_url(visit_schedule) -> str:
     """Where a visitor writes or reviews the report for a visit."""
     return _absolute_url('faculty_class_visit:edit_visit_report',
@@ -109,6 +123,10 @@ def notify_teacher_visit_scheduled(visit_schedule) -> None:
     cfg = _get_settings()
     if cfg.get('notify_teacher_on_schedule', 'No') != 'Yes':
         return
+    # Per-type switch (#21): no email, no confirmation link, no sent stamp.
+    from .visit_types import notify_on_schedule
+    if not notify_on_schedule(visit_schedule, cfg):
+        return
 
     teacher = visit_schedule.teacher
     if not teacher:
@@ -154,6 +172,9 @@ def notify_teacher_report_submitted(visit_report) -> None:
         return
 
     visit_schedule = visit_report.visit_schedule
+    from .visit_types import notify_on_submit
+    if not notify_on_submit(visit_schedule, cfg):  # per-type switch (#21)
+        return
     teacher = visit_schedule.teacher
     if not teacher:
         return
@@ -203,7 +224,7 @@ def notify_notification_target(visit_report) -> None:
         # The office copy renders the same body as the instructor's, which
         # advertises {{public_report_url}} -- without the key it rendered blank
         # here too (#4). Whether this email should have its own wording is #5.
-        'public_report_url': instructor_report_url(visit_schedule),
+        'public_report_url': office_report_url(visit_schedule, cfg),
     }
 
     if notify_target == 'course_administrator':

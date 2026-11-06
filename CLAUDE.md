@@ -88,7 +88,7 @@ is correct regardless of which config is active.
 One `Setting` row, key `class_visit`, defined in `settings/class_visit.py`. The client-facing
 explanation of every option is in [`docs/class-visit-configuration-workbook.md`](docs/class-visit-configuration-workbook.md);
 keep that workbook in sync when you add, rename, or remove a setting. Keys:
-`is_active` / `debug_email_list`, `report_fields_json`, `visit_types`, `section_status_filter`,
+`is_active` / `debug_email_list`, `report_fields_json`, `visit_types` + `visit_type_options` (per-type instructor emails and portal visibility, #21; read through `services/visit_types.py`), `section_status_filter`,
 `notify_target` / `generic_email`, `notify_teacher_on_schedule` + subject/message,
 `instructor_confirm_link`, `notify_teacher_on_submit` + subject/message,
 `visitor_file_upload` / `visitor_file_required` / `instructor_view_visitor_files`, `instructor_file_required`,

@@ -70,13 +70,16 @@ class VisitScheduleQuerysetTest(TestCase):
         vs.format_kwarg = None
         vs.kwargs = {}
 
-        with patch(f'{PKG}.views.instructor.teacher_visits_q') as visits_q:
+        with patch(f'{PKG}.views.instructor.teacher_visits_q') as visits_q, \
+             patch(f'{PKG}.views.instructor.visible_q') as visible:
             result = vs.get_queryset()
 
         # Must filter by the teacher's visit scope (primary, plus secondary
-        # sections the Secondary Teacher Access setting allows -- cis#154).
+        # sections the Secondary Teacher Access setting allows -- cis#154),
+        # minus visit types hidden from instructors (#21).
         visits_q.assert_called_once_with(teacher)
-        MockVS.objects.filter.assert_called_once_with(visits_q.return_value)
+        MockVS.objects.filter.assert_called_once_with(
+            visits_q.return_value, visible.return_value)
         self.assertEqual(result, qs)
 
     @patch(f'{PKG}.views.instructor.VisitSchedule')

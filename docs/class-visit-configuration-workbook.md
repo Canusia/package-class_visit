@@ -88,6 +88,19 @@ Each visit is tagged with a **type** so you can distinguish, for example, a firs
 visit is scheduled. Make sure the list in 2.1 covers every kind of visit your program
 records, including a general-purpose type if you need one.
 
+**2.3** Are any visit types internal only (for example, tracking or payment processing), so the
+instructor shouldn't be emailed about them or see them? For each type you can turn off: the
+instructor email when a visit is scheduled, the instructor email when its report is submitted,
+and the visit appearing in the instructor portal. A type the instructor can't see gets neither
+email. The office's report-submitted email still goes out (its report link points to the staff or faculty report page instead). The
+general instructor email settings in Section 6 still apply to every type. Leave a type all Yes
+to keep the standard behaviour.
+
+| Visit Type | Email instructor when scheduled? | Email instructor when report submitted? | Instructor can see it? |
+| :-- | :-- | :-- | :-- |
+| | Yes / No | Yes / No | Yes / No |
+| | Yes / No | Yes / No | Yes / No |
+
 ---
 
 ## Section 3 — Which Sections Are Visitable

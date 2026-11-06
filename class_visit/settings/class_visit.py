@@ -80,6 +80,23 @@ class class_visit(forms.Form):
         help_text='Pipe-delimited list of visit types. E.g. Initial|Follow-up|Annual',
     )
 
+    # Per-type instructor options (#21). Edited through the table the script
+    # below draws from Visit Types; the JSON stays the stored form (and the
+    # fallback editor without JavaScript). See services/visit_types.py.
+    visit_type_options = forms.CharField(
+        required=False,
+        widget=forms.Textarea(attrs={'rows': 3}),
+        label='Visit Type Options',
+        help_text=(
+            'Per visit type: email the instructor when a visit is scheduled, email the '
+            'instructor when its report is submitted, and show the visit in the instructor '
+            'portal. A type the instructor can\'t see gets neither email. The Notify Teacher '
+            'switches below still apply to every type. Types left out are Yes for all three. '
+            'JSON: {"Annual Contract": {"notify_on_schedule": false, '
+            '"notify_on_submit": false, "instructor_visible": false}}.'
+        ),
+    )
+
     # ---- Report field configuration ----
     report_fields_json = forms.CharField(
         required=False,
@@ -391,6 +408,7 @@ class class_visit(forms.Form):
             self.helper.layout = Layout(
                 *list(self.fields.keys()),
                 HTML(self._PAYMENT_NOTIFY_TOGGLE_JS),
+                HTML(self._VISIT_TYPE_OPTIONS_JS),
             )
 
     # Injected into the settings form; toggles visibility of the payment-paid
@@ -429,6 +447,162 @@ class class_visit(forms.Form):
 })();
 </script>
 """
+
+    # Draws a table (type x three Yes/No columns) from the Visit Types field
+    # and writes it into the visit_type_options JSON, which it hides (#21).
+    # Without JavaScript the JSON textarea stays the editor.
+    _VISIT_TYPE_OPTIONS_JS = """
+<script>
+(function () {
+  var types = document.getElementById('id_visit_types');
+  var store = document.getElementById('id_visit_type_options');
+  if (!types || !store) { return; }
+  var COLS = [
+    ['notify_on_schedule', 'Email instructor when scheduled'],
+    ['notify_on_submit', 'Email instructor when report submitted'],
+    ['instructor_visible', 'Instructor can see it']
+  ];
+  var own = function (o, k) { return Object.prototype.hasOwnProperty.call(o, k); };
+  var opts = Object.create(null);
+  try {
+    var parsed = JSON.parse(store.value || '{}') || {};
+    Object.keys(parsed).forEach(function (k) { opts[k] = Object.assign(Object.create(null), parsed[k]); });
+  } catch (e) { return; }
+  // Keep the JSON editor visible when the server rejected it, so the error shows.
+  if (!store.classList.contains('is-invalid')) { store.style.display = 'none'; }
+  var old = document.getElementById('cv_visit_type_table');
+  if (old) { old.parentNode.removeChild(old); }
+  var wrap = document.createElement('div');
+  wrap.id = 'cv_visit_type_table';
+  wrap.className = 'table-responsive';
+  store.parentNode.insertBefore(wrap, store);
+
+  function names() {
+    return types.value.split('|').map(function (v) { return v.trim(); })
+      .filter(function (v) { return v; });
+  }
+  function isOff(n) {
+    return own(opts, n) && COLS.some(function (c) { return opts[n][c[0]] === false; });
+  }
+  // A type dropped from Visit Types keeps its row while anything is off, so
+  // renaming or retiring a hidden type doesn't show its old visits again.
+  function rows() {
+    var listed = names();
+    var retired = Object.keys(opts).filter(function (n) {
+      return listed.indexOf(n) < 0 && isOff(n);
+    });
+    return listed.map(function (n) { return [n, false]; })
+      .concat(retired.map(function (n) { return [n, true]; }));
+  }
+  function save() {
+    var out = Object.create(null);
+    rows().forEach(function (r) {
+      var n = r[0];
+      if (!own(opts, n)) { return; }
+      var e = {};
+      COLS.forEach(function (c) { if (opts[n][c[0]] === false) { e[c[0]] = false; } });
+      if (Object.keys(e).length) { out[n] = e; }
+    });
+    store.value = JSON.stringify(out);
+  }
+  function draw() {
+    var t = document.createElement('table');
+    t.className = 'table table-sm table-bordered mb-0';
+    var head = t.createTHead().insertRow();
+    ['Visit type'].concat(COLS.map(function (c) { return c[1]; })).concat(['']).forEach(function (h) {
+      var th = document.createElement('th'); th.textContent = h; head.appendChild(th);
+    });
+    var body = t.createTBody();
+    rows().forEach(function (r) {
+      var n = r[0], retired = r[1];
+      var row = body.insertRow();
+      row.insertCell().textContent = retired ? n + ' (not in Visit Types; applies to existing visits)' : n;
+      COLS.forEach(function (c) {
+        var sel = document.createElement('select');
+        sel.className = 'form-control form-control-sm';
+        ['Yes', 'No'].forEach(function (v) {
+          var o = document.createElement('option'); o.value = v; o.textContent = v; sel.appendChild(o);
+        });
+        sel.value = (own(opts, n) && opts[n][c[0]] === false) ? 'No' : 'Yes';
+        sel.addEventListener('change', function () {
+          if (!own(opts, n)) { opts[n] = Object.create(null); }
+          opts[n][c[0]] = sel.value === 'Yes';
+          draw();
+          save();
+        });
+        var hidden = c[0] !== 'instructor_visible' && own(opts, n) && opts[n].instructor_visible === false;
+        if (hidden) { sel.value = 'No'; sel.disabled = true; sel.title = 'Off: the instructor can\\'t see this type'; }
+        row.insertCell().appendChild(sel);
+      });
+      var cell = row.insertCell();
+      if (retired) {
+        var btn = document.createElement('button');
+        btn.type = 'button'; btn.className = 'btn btn-sm btn-link p-0'; btn.textContent = 'Remove';
+        btn.title = 'Its existing visits go back to Yes for all three';
+        btn.addEventListener('click', function () { delete opts[n]; draw(); save(); });
+        cell.appendChild(btn);
+      }
+    });
+    wrap.innerHTML = '';
+    wrap.appendChild(t);
+  }
+  types.addEventListener('input', function () { draw(); save(); });
+  draw();
+  save();
+})();
+</script>
+"""
+
+    def clean_visit_type_options(self):
+        """Per-type options must name configured Visit Types and use true/false.
+
+        A typo in a type name would otherwise silently leave an internal visit
+        visible to its instructor (#21). Stored as normalized JSON text.
+        """
+        from ..services.visit_types import OPTION_KEYS
+
+        raw = (self.cleaned_data.get('visit_type_options') or '').strip()
+        if not raw:
+            return '{}'
+        try:
+            data = json.loads(raw)
+        except (json.JSONDecodeError, ValueError) as exc:
+            raise forms.ValidationError(f'Invalid JSON: {exc}')
+        if not isinstance(data, dict):
+            raise forms.ValidationError(
+                'Visit Type Options must be a JSON object keyed by visit type.')
+
+        configured = [
+            v.strip() for v in (self.cleaned_data.get('visit_types') or '').split('|')
+            if v.strip()
+        ]
+        # A type no longer listed may keep its options while visits still carry
+        # it: dropping them would show a retired hidden type's visits again.
+        unknown = [name for name in data if name not in configured]
+        if unknown:
+            from ..models import VisitSchedule
+            in_use = set(VisitSchedule.objects.filter(type_of_visit__in=unknown)
+                         .values_list('type_of_visit', flat=True).distinct())
+            unknown = [name for name in unknown if name not in in_use]
+        if unknown:
+            raise forms.ValidationError(
+                f'Visit type(s) {", ".join(unknown)} are not in the configured Visit Types '
+                f'({", ".join(configured) or "none"}) and no visit uses them.')
+
+        for name, entry in data.items():
+            if not isinstance(entry, dict):
+                raise forms.ValidationError(f'"{name}": options must be a JSON object.')
+            bad_keys = [k for k in entry if k not in OPTION_KEYS]
+            if bad_keys:
+                raise forms.ValidationError(
+                    f'"{name}": unknown option(s) {", ".join(bad_keys)}; '
+                    f'use {", ".join(OPTION_KEYS)}.')
+            bad_values = [k for k, v in entry.items() if not isinstance(v, bool)]
+            if bad_values:
+                raise forms.ValidationError(
+                    f'"{name}": {", ".join(bad_values)} must be true or false.')
+
+        return json.dumps(data)
 
     def clean_report_fields_json(self):
         """Reject malformed / structurally-invalid Report Fields JSON at save time.
@@ -596,6 +770,8 @@ class class_visit(forms.Form):
             'visitor_paid_message': '',
             'report_fields_json': '[]',
             'visit_types': 'Initial|Follow-up|Annual',
+            # {} = every type Yes / Yes / Yes, today's behaviour (#21).
+            'visit_type_options': '{}',
             'section_status_filter': 'active',
             'notify_target': 'course_administrator',
             'generic_email': '',
