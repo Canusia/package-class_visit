@@ -120,12 +120,17 @@ class VisitSchedule(models.Model):
 
     @property
     def instructor_emails(self):
-        sections = self.class_sections.all()
+        """Who gets the instructor emails for this visit: each section's
+        primary teacher, plus its secondary teachers when the Secondary
+        Teacher Access setting allows class visits (cis#154). Each address
+        once, primaries first."""
+        from .compat import notified_teachers
         result = []
-
-        for section in sections:
-            result.append(section.teacher.user.email)
-            
+        for section in self.class_sections.all():
+            for teacher in notified_teachers(section):
+                email = getattr(getattr(teacher, 'user', None), 'email', None)
+                if email and email not in result:
+                    result.append(email)
         return result
 
     @property

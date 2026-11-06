@@ -18,6 +18,7 @@ from cis.models.section import ClassSection
 from cis.models.term import Term
 from cis.utils import CIS_user_only, active_term, user_has_cis_role
 
+from ..compat import teacher_filter_q
 from ..forms.ce import CEVisitScheduleForm
 from ..models import NotNeededVisit, VisitReport, VisitSchedule
 from ..serializers.ce import (
@@ -99,7 +100,8 @@ class CEVisitScheduleViewSet(viewsets.ReadOnlyModelViewSet):
         if visitor_id:
             qs = qs.filter(visitors__id=visitor_id)
         if teacher_id:
-            qs = qs.filter(class_sections__teacher__id=teacher_id)
+            # Primary or secondary teacher (cis#154).
+            qs = qs.filter(teacher_filter_q(teacher_id)).distinct()
         if highschool_id:
             qs = qs.filter(class_sections__highschool__id=highschool_id)
         if report_status:
