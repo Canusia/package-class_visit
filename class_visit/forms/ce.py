@@ -250,8 +250,8 @@ class CEVisitScheduleForm(forms.Form):
                 }
                 # A move to another instructor's class: the old instructor's
                 # confirmation (and emailed link) no longer applies.
-                teachers = lambda ids: set(ClassSection.objects.filter(
-                    pk__in=ids).values_list('teacher_id', flat=True))
+                teachers = lambda ids: {
+                    s.teacher_id for s in ClassSection.objects.filter(pk__in=ids)}
                 if teachers(before_ids) != teachers(after_ids):
                     cleared = {k: visit.meta.pop(k) for k in
                                ('confirmation_token', 'confirmed_on') if k in visit.meta}
