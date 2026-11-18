@@ -9,7 +9,7 @@ from django import forms as djforms
 from django.contrib.auth import get_user_model
 from django.contrib.auth.models import Group
 from django.template.loader import render_to_string
-from django.test import TestCase, SimpleTestCase
+from django.test import TestCase
 
 from cis.models.term import AcademicYear, Term
 from cis.models.course import Cohort, Course, CourseAdministrator
@@ -106,8 +106,10 @@ class ManageVisitSectionScopeTest(TestCase):
         )
 
 
-class ReportTemplateRenderTest(SimpleTestCase):
-    """The add/edit report form renders with crispy + the app CSS (no DB)."""
+class ReportTemplateRenderTest(TestCase):
+    """The add/edit report form renders with crispy + the app CSS. A TestCase:
+    the portal base reads the campus brand (cis multi-campus theming) and the
+    upload switch reads the class_visit Setting, both from the DB."""
 
     @patch(f'{PKG}.forms.faculty.report_fields.build_report_form_fields')
     def test_report_template_renders_with_crispy(self, mock_build):
