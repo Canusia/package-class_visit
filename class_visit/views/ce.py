@@ -31,7 +31,7 @@ from ..services import emails as email_service
 from ..services.payment import payment_tracking_enabled
 from ..services import uploads
 from ..services.section_scope import status_filter_to_db
-from ..services.terms import filter_by_term, term_choices
+from ..services.terms import closed_visit_terms, filter_by_term, open_visit_term_ids, term_choices
 from ..settings.class_visit import class_visit as ClassVisitSettings
 
 logger = logging.getLogger(__name__)
@@ -213,6 +213,10 @@ def manage_visit(request, section_id=None, visit_id=None):
             'section_id': section_id,
             'visit_id': visit_id or '-1',
             'moving': getattr(form, 'moving', False),
+            # CE may schedule outside the class-visit window, with a warning (#24).
+            'closed_window_terms': closed_visit_terms(
+                ClassSection.objects.filter(pk=section_id).select_related(
+                    'term__academic_year')) if section_id else [],
         },
     )
 
@@ -456,6 +460,8 @@ def schedule_picker(request):
             'course_id': course_id or '',
             'q': query,
             'move_visit': move_visit,
+            # CE may schedule outside the class-visit window; flag it (#24).
+            'open_visit_term_ids': open_visit_term_ids(),
             'terms': Term.objects.all().order_by('code'),
             'term_choices': term_choices(Term.objects.all().order_by('-code')),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),

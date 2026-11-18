@@ -34,6 +34,12 @@ $(document).ready(function () {
 </script>
 
 <h3 class="mb-3">{{ page_title }}</h3>
+{% if closed_window_terms %}
+  <p class="alert alert-warning small" data-visit-window-closed>
+    The class-visit window is closed for {{ closed_window_terms|join:", " }}. Faculty can't
+    schedule visits on this term; you can still save this one.
+  </p>
+{% endif %}
 {% if visit_id and visit_id != '-1' %}
   {% if moving %}
   <p class="alert alert-info small">

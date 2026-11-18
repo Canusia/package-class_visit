@@ -31,10 +31,10 @@
                   <div class="card-body bg-gray-200">
                     <form id="class_section_filter" class="form-inline float-right filter">
                       <select class="form-control mt-2" name="term_id">
-                        <option value="">By Term</option>
-                        {% for tid, tlabel in term_choices %}
+                        <option value="">{% if visit_windows_in_use %}All open terms{% else %}By Term{% endif %}</option>
+                        {% for tid, tlabel in schedule_term_choices %}
                         <option value="{{ tid }}"
-                          {% if tid == active_term.id|stringformat:"s" %}selected{% endif %}>{{ tlabel }}</option>
+                          {% if tid == schedule_term_id %}selected{% endif %}>{{ tlabel }}</option>
                         {% endfor %}
                       </select>
                       &nbsp;
@@ -192,7 +192,12 @@
             lengthMenu: [30, 50, 100],
             language: { loadingRecords: '&nbsp;' },
             columns: [
-              { render: function(d, t, row) { return row.term ? row.term.label : ''; } },
+              { render: function(d, t, row) {
+                  // The academic year too (#24): last year's terms differ only in a suffix.
+                  if (!row.term) { return ''; }
+                  var ay = row.term.academic_year && row.term.academic_year.name;
+                  return $('<div>').text((ay ? ay + ', ' : '') + (row.term.label || '')).html();
+              } },
               { render: function(d, t, row) { return row.highschool ? row.highschool.name : ''; } },
               { render: function(d, t, row) {
                   return row.course.name + '<br><span class="text-muted">'

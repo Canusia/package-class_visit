@@ -52,7 +52,8 @@
     <tr>
       <td>{{ s.course.name }}</td>
       <td>{{ s.class_number }}-{{ s.section_number }}</td>
-      <td>{% if s.term.academic_year %}{{ s.term.academic_year.name }}, {% endif %}{{ s.term.label }}</td>
+      <td>{% if s.term.academic_year %}{{ s.term.academic_year.name }}, {% endif %}{{ s.term.label }}
+        {% if open_visit_term_ids is not None and s.term_id not in open_visit_term_ids %}<br><span class="badge badge-warning" data-visit-window-closed>Visit window closed</span>{% endif %}</td>
       <td>{% if s.teacher %}{{ s.teacher.user.last_name }}, {{ s.teacher.user.first_name }}{% else %}<span class="text-muted">No instructor</span>{% endif %}</td>
       <td>{{ s.highschool.name }}</td>
       <td>

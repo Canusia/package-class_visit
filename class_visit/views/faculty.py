@@ -36,7 +36,7 @@ from ..services.scope import (
     class_visit_administrators, faculty_can_view_others_visits, is_visitor,
     scoped_course_ids, scoped_sections,
 )
-from ..services.terms import filter_by_term, term_choices
+from ..services.terms import filter_by_term, open_visit_term_ids, term_choices
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +81,12 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
         ).select_related(
             'teacher__user', 'course', 'term', 'highschool', 'campus', 'location',
         ).prefetch_related('visitschedule_set')
+
+        # Only terms whose class-visit window is open (#24), even with no
+        # term_id: last year's sections keep status A for ever.
+        open_ids = open_visit_term_ids()
+        if open_ids is not None:
+            qs = qs.filter(term_id__in=open_ids)
 
         # Optional filters from DataTables URL params
         term_id = self.request.GET.get('term_id')
@@ -516,11 +522,28 @@ def index(request):
     ).exclude(pk=request.user.pk).distinct().order_by(
         'last_name', 'first_name') if can_view_others else []
 
+    # Add Observation Date(s) lists only terms with an open visit window (#24)
+    # and starts on the active term when it is open, else the first open one.
+    active_term = get_active_term()
+    open_ids = open_visit_term_ids()
+    if open_ids is None:
+        schedule_term_choices = term_choices(terms)
+        schedule_term_id = str(active_term.id) if active_term else ''
+    else:
+        schedule_term_choices = term_choices(terms.filter(id__in=open_ids))
+        open_choice_ids = [tid for tid, _ in schedule_term_choices]
+        schedule_term_id = (
+            str(active_term.id) if active_term and str(active_term.id) in open_choice_ids
+            else (open_choice_ids[0] if open_choice_ids else ''))
+
     return render(request, 'class_visit/faculty/visits.html', {
         'menu': menu,
         'terms': terms,
         'term_choices': term_choices(terms),
-        'active_term': get_active_term(),
+        'schedule_term_choices': schedule_term_choices,
+        'schedule_term_id': schedule_term_id,
+        'visit_windows_in_use': open_ids is not None,
+        'active_term': active_term,
         'can_view_others': can_view_others,
         'visit_tabs': visit_tabs,
         'courses': courses,

@@ -185,6 +185,16 @@ faculty_visit_tabs.set_active('all')      # pick the default tab
 
 A disabled tab has no nav item and no pane, so its table never loads.
 
+### Class-visit window (#24)
+
+With cis v0.2.12a or later, each term has **Class visits open** and **Class visits close** dates (CE → Terms → edit; a sub-term without its own dates uses its parent's). Faculty can then schedule visits only on terms whose window includes today:
+
+- **Add Observation Date(s)** lists only those terms, starting on the active term when it is open, else the first open one. The sections feed applies the same filter server-side.
+- A new faculty visit on a closed term is rejected; editing an existing visit keeps its sections.
+- CE can still schedule on a closed term. The schedule picker marks those rows "Visit window closed" and the visit form shows a warning.
+
+Until **any** term has a window, every term stays open (the old behaviour). Once one does, a term with no window of its own or from a parent is closed to faculty. On an older cis without the fields nothing changes.
+
 ## Post-install: removing the deprecated `class_visit_emails` from the host `cis` app
 
 Older MyCE tenants kept the class-visit email templates in the **host** module `cis/settings/class_visit_emails.py` (stored under `Setting` key `cis.settings.class_visit_emails`). This package replaces it with its own in-app settings class (key `class_visit`), and migration `0007_migrate_class_visit_emails_settings` copies the old values into the new key on deploy. After you've confirmed the new settings exist, remove the dead host-side pieces **in the tenant repo (e.g. `ewu`), not in this package**:

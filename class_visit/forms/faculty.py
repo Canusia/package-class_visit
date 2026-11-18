@@ -13,6 +13,7 @@ from ..services.scope import (
     class_visit_administrators, scoped_course_ids, scoped_sections,
 )
 from ..services.section_scope import status_filter_to_db as _status_filter_to_db
+from ..services.terms import open_visit_term_ids
 
 
 class VisitScheduleForm(forms.Form):
@@ -118,6 +119,12 @@ class VisitScheduleForm(forms.Form):
                     teacher_id=anchor_section.teacher_id,
                     highschool_id=anchor_section.highschool_id,
                 )
+        # Only terms whose class-visit window is open (#24). An edit keeps the
+        # visit's own sections below, so a closed window never drops them.
+        self._open_term_ids = open_visit_term_ids()
+        if self._open_term_ids is not None:
+            sections_qs = sections_qs.filter(term_id__in=self._open_term_ids)
+
         if visit_schedule is not None:
             # Sections already on the visit stay selectable, or saving would drop them.
             keep_ids = set(sections_qs.values_list('pk', flat=True)) | set(
@@ -212,8 +219,22 @@ class VisitScheduleForm(forms.Form):
             settings_obj.get('section_status_filter', 'active')
         )
 
-        sections_qs = ClassSection.objects.filter(id__in=raw_ids).select_related('teacher__user')
+        sections_qs = ClassSection.objects.filter(id__in=raw_ids).select_related(
+            'teacher__user', 'term')
         sections = list(sections_qs)
+
+        # Class-visit window (#24): a section the visit doesn't already have
+        # must be on a term whose window is open.
+        if self._open_term_ids is not None:
+            existing = set()
+            if self._visit_schedule is not None:
+                existing = set(self._visit_schedule.class_sections.values_list('pk', flat=True))
+            closed = sorted({str(s.term) for s in sections
+                             if s.pk not in existing and s.term_id not in self._open_term_ids})
+            if closed:
+                raise ValidationError(
+                    'Visits can no longer be scheduled for %s: the class-visit '
+                    'window is closed.' % ', '.join(closed))
 
         # Status filter check
         bad_status = [s for s in sections if s.status not in allowed_status_codes]
