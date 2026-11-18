@@ -1,11 +1,19 @@
 {% extends "cis/logged-base-modal.html" %}
 
 {% block body %}
+{% if move_visit %}
+<h3 class="mb-1">Move Visit to a Different Section</h3>
+<p class="text-muted small mb-3">
+  Pick the section this visit (and its report) should belong to. You confirm the change on the
+  next screen; the report, date, type and visitors stay as they are, and no email is sent.
+</p>
+{% else %}
 <h3 class="mb-1">{{ page_title }}</h3>
 <p class="text-muted small mb-3">
   Pick the section to visit. You choose the visitor(s) — the course's active faculty and
   visitors — on the next screen, and the visit is recorded as scheduled by CE.
 </p>
+{% endif %}
 
 <div class="mb-3">
   <form id="frm_schedule_picker_filter" class="form-inline" method="get">
@@ -21,6 +29,9 @@
         <option value="{{ c.id }}" {% if c.id|stringformat:"s" == course_id %}selected{% endif %}>{{ c.name }}</option>
       {% endfor %}
     </select>
+    <input type="search" name="q" value="{{ q }}" class="form-control mr-2 mb-2"
+           placeholder="High school, class #, instructor">
+    {% if move_visit %}<input type="hidden" name="move_visit" value="{{ move_visit.id }}">{% endif %}
     <button type="submit" class="btn btn-sm btn-secondary mb-2">Filter</button>
   </form>
 </div>
@@ -41,12 +52,17 @@
     <tr>
       <td>{{ s.course.name }}</td>
       <td>{{ s.class_number }}-{{ s.section_number }}</td>
-      <td>{{ s.term.label }}</td>
-      <td>{{ s.teacher.user.last_name }}, {{ s.teacher.user.first_name }}</td>
+      <td>{% if s.term.academic_year %}{{ s.term.academic_year.name }}, {% endif %}{{ s.term.label }}</td>
+      <td>{% if s.teacher %}{{ s.teacher.user.last_name }}, {{ s.teacher.user.first_name }}{% else %}<span class="text-muted">No instructor</span>{% endif %}</td>
       <td>{{ s.highschool.name }}</td>
       <td>
+        {% if move_visit %}
+        <a class="btn btn-xs btn-primary"
+           href="{% url 'class_visit:ce_move_visit' visit_id=move_visit.id section_id=s.id %}">Move here</a>
+        {% else %}
         <a class="btn btn-xs btn-primary"
            href="{% url 'class_visit:ce_manage_visit' section_id=s.id %}">Schedule</a>
+        {% endif %}
       </td>
     </tr>
     {% empty %}

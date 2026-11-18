@@ -55,6 +55,8 @@ class VisitScheduleModelTest(TestCase):
     def _make_mock_section(self, teacher):
         section = MagicMock()
         section.teacher = teacher
+        # Like a real ClassSection: the FK id the comparison uses (#26).
+        section.teacher_id = teacher.pk if teacher is not None else None
         return section
 
     def test_sections_share_teacher_true_when_same_teacher(self):

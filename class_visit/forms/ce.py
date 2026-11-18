@@ -1,6 +1,7 @@
 """CE Visit Schedule CRUD form."""
 from django import forms
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from django.utils.safestring import mark_safe
 
 from cis.models.section import ClassSection
@@ -118,6 +119,7 @@ class CEVisitScheduleForm(forms.Form):
             # a display filter into data loss. They are labelled so the CE user
             # can see why an otherwise-filtered section is listed.
             existing_ids = set()
+            self.moving = False
             if visit_id and str(visit_id) != '-1':
                 existing = VisitSchedule.objects.filter(pk=visit_id).first()
                 if existing:
@@ -125,6 +127,9 @@ class CEVisitScheduleForm(forms.Form):
                     existing_ids = {s.id for s in existing_sections}
                     known = {s.id for s in sections}
                     sections += [s for s in existing_sections if s.id not in known]
+                    # Anchored on a section the visit is not on: CE is moving
+                    # the visit there (#26).
+                    self.moving = anchor.id not in existing_ids
 
             section_choices = []
             for s in sections:
@@ -132,7 +137,8 @@ class CEVisitScheduleForm(forms.Form):
                     continue
                 suffix = ''
                 if s.id in existing_ids and (
-                        s.id in excluded_ids or s.status not in allowed_status_codes):
+                        self.moving or s.id in excluded_ids
+                        or s.status not in allowed_status_codes):
                     suffix = ' — currently scheduled'
                 section_choices.append((
                     str(s.id),
@@ -193,9 +199,9 @@ class CEVisitScheduleForm(forms.Form):
                 self.fields['visitors'].initial = [
                     str(v.id) for v in visit.visitors.all()
                 ]
-                self.fields['class_sections'].initial = [
-                    str(s.id) for s in visit.class_sections.all()
-                ]
+                self.fields['class_sections'].initial = (
+                    [str(section_id)] if getattr(self, 'moving', False)
+                    else [str(s.id) for s in visit.class_sections.all()])
             except VisitSchedule.DoesNotExist:
                 pass
         else:
@@ -228,8 +234,20 @@ class CEVisitScheduleForm(forms.Form):
             visit.save()
         else:
             visit = VisitSchedule.objects.get(pk=visit_id)
+            before_ids = sorted(str(i) for i in visit.class_sections.values_list('id', flat=True))
             visit.class_sections.clear()
             visit.visitors.clear()
+            after_ids = sorted(str(i) for i in data.get('class_sections', []))
+            if before_ids != after_ids:
+                # A section change is not otherwise visible once saved (#26).
+                user = getattr(request, 'user', None)
+                visit.meta.setdefault('section_changes', []).append({
+                    'at': timezone.now().isoformat(),
+                    'by_id': getattr(user, 'id', None),
+                    'by': user.get_full_name() if user is not None and user.is_authenticated else '',
+                    'from_ids': before_ids,
+                    'to_ids': after_ids,
+                })
 
         visit.type_of_visit = data.get('type_of_visit', '')
         visit.visit_date = data.get('visit_date')

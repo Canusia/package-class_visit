@@ -173,12 +173,16 @@ def index(request):
 @xframe_options_exempt
 def manage_visit(request, section_id=None, visit_id=None):
     """Add (section_id required) or edit (visit_id required) a VisitSchedule."""
-    # For edit without a section_id, derive it from the first section on the visit.
-    if visit_id and not section_id:
+    # Edit: the visit must exist. Without a section_id, anchor on the visit's
+    # first section; with one (ce_move_visit, #26), anchor there to move it.
+    if visit_id:
         visit = get_object_or_404(VisitSchedule, pk=visit_id)
-        first_section = visit.class_sections.first()
-        if first_section:
-            section_id = first_section.id
+        if not section_id:
+            first_section = visit.class_sections.first()
+            if first_section:
+                section_id = first_section.id
+        else:
+            get_object_or_404(ClassSection, pk=section_id)
 
     form = CEVisitScheduleForm(section_id=section_id, visit_id=visit_id)
 
@@ -208,6 +212,7 @@ def manage_visit(request, section_id=None, visit_id=None):
             'form': form,
             'section_id': section_id,
             'visit_id': visit_id or '-1',
+            'moving': getattr(form, 'moving', False),
         },
     )
 
@@ -386,6 +391,15 @@ def not_needed_picker(request):
     )
 
 
+def _uuid_or_404(value):
+    """``value`` as a UUID; a malformed id is a 404, not a 500."""
+    import uuid
+    try:
+        return uuid.UUID(str(value))
+    except ValueError:
+        raise Http404
+
+
 @login_required(login_url='/')
 @xframe_options_exempt
 def schedule_picker(request):
@@ -397,6 +411,17 @@ def schedule_picker(request):
     """
     term_id = request.GET.get('term_id')
     course_id = request.GET.get('course_id')
+    query = (request.GET.get('q') or '').strip()
+
+    # Move mode (#26): rows move this visit instead of starting a new one, and
+    # the course defaults to the visit's own.
+    move_visit = None
+    if request.GET.get('move_visit'):
+        move_visit = get_object_or_404(VisitSchedule, pk=_uuid_or_404(request.GET['move_visit']))
+        if course_id is None:
+            first = move_visit.class_sections.first()
+            course_id = str(first.course_id) if first else ''
+
     if term_id is None and course_id is None:
         term = active_term()
         term_id = str(term.id) if term else ''
@@ -411,8 +436,15 @@ def schedule_picker(request):
         sections = filter_by_term(sections, term_id)
     if course_id:
         sections = sections.filter(course__id=course_id)
+    if query:
+        sections = sections.filter(
+            Q(highschool__name__icontains=query) | Q(class_number__icontains=query)
+            | Q(section_number__icontains=query) | Q(course__name__icontains=query)
+            | Q(teacher__user__last_name__icontains=query)
+            | Q(teacher__user__first_name__icontains=query))
 
-    sections = sections.order_by('course__name', 'teacher__user__last_name')[:200]
+    sections = sections.select_related('term__academic_year').order_by(
+        'course__name', 'teacher__user__last_name')[:200]
 
     return render(
         request,
@@ -422,6 +454,8 @@ def schedule_picker(request):
             'sections': sections,
             'term_id': term_id or '',
             'course_id': course_id or '',
+            'q': query,
+            'move_visit': move_visit,
             'terms': Term.objects.all().order_by('code'),
             'term_choices': term_choices(Term.objects.all().order_by('-code')),
             'courses': Course.objects.filter(status__iexact='active').order_by('name'),

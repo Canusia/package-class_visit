@@ -170,12 +170,14 @@ class VisitSchedule(models.Model):
         """
         Return True if all sections in the iterable share the same teacher.
         Returns True vacuously for empty or single-element collections.
+        Two or more sections where any has no teacher do not share one (#26):
+        comparing ids avoids dereferencing a missing teacher.
         """
         sections = list(class_sections_qs_or_list)
         if len(sections) <= 1:
             return True
-        first_pk = sections[0].teacher.pk
-        return all(s.teacher.pk == first_pk for s in sections[1:])
+        first_id = sections[0].teacher_id
+        return first_id is not None and all(s.teacher_id == first_id for s in sections[1:])
 
     def ensure_confirmation_token(self):
         """

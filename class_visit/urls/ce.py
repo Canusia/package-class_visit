@@ -62,6 +62,11 @@ urlpatterns = [
         name='ce_edit_visit',
     ),
     path(
+        'edit/<uuid:visit_id>/section/<uuid:section_id>/',
+        _ce(manage_visit),
+        name='ce_move_visit',
+    ),
+    path(
         'delete/<uuid:visit_id>/',
         _ce(delete_visit),
         name='ce_delete_visit',

@@ -34,6 +34,21 @@ $(document).ready(function () {
 </script>
 
 <h3 class="mb-3">{{ page_title }}</h3>
+{% if visit_id and visit_id != '-1' %}
+  {% if moving %}
+  <p class="alert alert-info small">
+    Moving this visit to the section checked below. Its current section is listed as
+    "currently scheduled" and unchecked; the report, date, type and visitors stay as they are,
+    and no email is sent.
+  </p>
+  {% endif %}
+  <p class="mb-3">
+    <a class="btn btn-outline-secondary btn-sm"
+       href="{% url 'class_visit:ce_schedule_picker' %}?move_visit={{ visit_id }}">
+      <i class="fas fa-exchange-alt"></i> Change section
+    </a>
+  </p>
+{% endif %}
 <form action="" method="post">
     {% csrf_token %}
     {{ form|crispy }}
