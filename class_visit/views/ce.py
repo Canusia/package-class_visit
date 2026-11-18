@@ -31,6 +31,7 @@ from ..services import emails as email_service
 from ..services.payment import payment_tracking_enabled
 from ..services import uploads
 from ..services.section_scope import status_filter_to_db
+from ..services.form_messages import error_message
 from ..services.terms import closed_visit_terms, filter_by_term, open_visit_term_ids, term_choices
 from ..settings.class_visit import class_visit as ClassVisitSettings
 
@@ -199,7 +200,7 @@ def manage_visit(request, section_id=None, visit_id=None):
             return JsonResponse(
                 {
                     'success': False,
-                    'message': 'Please fix the errors below.',
+                    'message': error_message(form),
                     'errors': str(form.errors),
                 }
             )
@@ -447,8 +448,9 @@ def schedule_picker(request):
             | Q(teacher__user__last_name__icontains=query)
             | Q(teacher__user__first_name__icontains=query))
 
+    # Newest term first, so this year's sections are inside the 200 shown.
     sections = sections.select_related('term__academic_year').order_by(
-        'course__name', 'teacher__user__last_name')[:200]
+        '-term__code', 'course__name', 'teacher__user__last_name')[:200]
 
     return render(
         request,

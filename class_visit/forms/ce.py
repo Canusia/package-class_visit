@@ -241,13 +241,24 @@ class CEVisitScheduleForm(forms.Form):
             if before_ids != after_ids:
                 # A section change is not otherwise visible once saved (#26).
                 user = getattr(request, 'user', None)
-                visit.meta.setdefault('section_changes', []).append({
+                change = {
                     'at': timezone.now().isoformat(),
                     'by_id': getattr(user, 'id', None),
                     'by': user.get_full_name() if user is not None and user.is_authenticated else '',
                     'from_ids': before_ids,
                     'to_ids': after_ids,
-                })
+                }
+                # A move to another instructor's class: the old instructor's
+                # confirmation (and emailed link) no longer applies.
+                teachers = lambda ids: set(ClassSection.objects.filter(
+                    pk__in=ids).values_list('teacher_id', flat=True))
+                if teachers(before_ids) != teachers(after_ids):
+                    cleared = {k: visit.meta.pop(k) for k in
+                               ('confirmation_token', 'confirmed_on') if k in visit.meta}
+                    if cleared.get('confirmed_on'):
+                        change['cleared_confirmed_on'] = cleared['confirmed_on']
+                    change['confirmation_reset'] = True
+                visit.meta.setdefault('section_changes', []).append(change)
 
         visit.type_of_visit = data.get('type_of_visit', '')
         visit.visit_date = data.get('visit_date')

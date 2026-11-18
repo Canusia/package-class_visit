@@ -193,7 +193,9 @@ With cis v0.2.12a or later, each term has **Class visits open** and **Class visi
 - A new faculty visit on a closed term is rejected; editing an existing visit keeps its sections.
 - CE can still schedule on a closed term. The schedule picker marks those rows "Visit window closed" and the visit form shows a warning.
 
-Until **any** term has a window, every term stays open (the old behaviour). Once one does, a term with no window of its own or from a parent is closed to faculty. On an older cis without the fields nothing changes.
+Until **any** term of a campus has a window, every term of that campus stays open (the old behaviour). Once one does, a term of that campus with no window of its own or from a parent is closed to faculty, so set the current term's window before (or together with) next term's. Campuses are decided separately. On an older cis without the fields nothing changes.
+
+A rejected visit form now shows the field errors in its message (for example the closed window, or sections with different instructors). Moving a visit (CE) to another instructor's section clears the old confirmation; the move is logged in the visit's `meta['section_changes']`.
 
 ## Post-install: removing the deprecated `class_visit_emails` from the host `cis` app
 

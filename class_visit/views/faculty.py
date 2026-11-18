@@ -36,6 +36,7 @@ from ..services.scope import (
     class_visit_administrators, faculty_can_view_others_visits, is_visitor,
     scoped_course_ids, scoped_sections,
 )
+from ..services.form_messages import error_message
 from ..services.terms import filter_by_term, open_visit_term_ids, term_choices
 
 logger = logging.getLogger(__name__)
@@ -79,7 +80,8 @@ class FacultySchedulableSectionViewSet(viewsets.ReadOnlyModelViewSet):
         ).exclude(
             id__in=not_needed_section_ids,
         ).select_related(
-            'teacher__user', 'course', 'term', 'highschool', 'campus', 'location',
+            'teacher__user', 'course', 'term__academic_year__campus', 'term__parent',
+            'highschool', 'campus', 'location',
         ).prefetch_related('visitschedule_set')
 
         # Only terms whose class-visit window is open (#24), even with no
@@ -197,7 +199,7 @@ def manage_visit(request, class_section_id, visit_id=None):
         else:
             return JsonResponse({
                 'success': False,
-                'message': 'Please correct the errors below.',
+                'message': error_message(form),
                 'errors': form.errors.as_json(),
             }, status=400)
 
@@ -532,9 +534,11 @@ def index(request):
     else:
         schedule_term_choices = term_choices(terms.filter(id__in=open_ids))
         open_choice_ids = [tid for tid, _ in schedule_term_choices]
+        # A closed active term: start on "All open terms" rather than one
+        # sub-term that may be from another year.
         schedule_term_id = (
             str(active_term.id) if active_term and str(active_term.id) in open_choice_ids
-            else (open_choice_ids[0] if open_choice_ids else ''))
+            else '')
 
     return render(request, 'class_visit/faculty/visits.html', {
         'menu': menu,

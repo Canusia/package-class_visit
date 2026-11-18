@@ -196,22 +196,22 @@
                   // The academic year too (#24): last year's terms differ only in a suffix.
                   if (!row.term) { return ''; }
                   var ay = row.term.academic_year && row.term.academic_year.name;
-                  return $('<div>').text((ay ? ay + ', ' : '') + (row.term.label || '')).html();
+                  return esc((ay ? ay + ', ' : '') + (row.term.label || ''));
               } },
-              { render: function(d, t, row) { return row.highschool ? row.highschool.name : ''; } },
+              { render: function(d, t, row) { return row.highschool ? esc(row.highschool.name) : ''; } },
               { render: function(d, t, row) {
-                  return row.course.name + '<br><span class="text-muted">'
-                    + (row.class_number || '') + ' / ' + (row.section_number || '') + '</span>';
+                  return esc(row.course.name) + '<br><span class="text-muted">'
+                    + esc(row.class_number || '') + ' / ' + esc(row.section_number || '') + '</span>';
               }},
               { render: function(d, t, row) {
                   if (!row.teacher) return '';
-                  return row.teacher.user.last_name + ', ' + row.teacher.user.first_name;
+                  return esc(row.teacher.user.last_name) + ', ' + esc(row.teacher.user.first_name);
               }},
               { render: function(d, t, row) {
-                  var col = 'Period: ' + (row.period_time || 'N/A');
+                  var col = 'Period: ' + esc(row.period_time || 'N/A');
                   if (row.syllabi && row.syllabi.length) {
                     $.each(row.syllabi, function(k, v) {
-                      col += '<br><a href="' + v.media + '">' + v.filename + '</a>';
+                      col += '<br><a href="' + esc(v.media) + '">' + esc(v.filename) + '</a>';
                     });
                   }
                   return col;

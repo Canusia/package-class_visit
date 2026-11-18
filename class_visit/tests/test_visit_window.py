@@ -4,6 +4,9 @@ With no window on any term, or a cis without the fields, nothing changes."""
 import datetime
 from unittest.mock import patch
 
+from unittest import skipUnless
+
+from django.conf import settings as django_settings
 from django.test import Client, RequestFactory
 from django.urls import reverse
 
@@ -21,6 +24,7 @@ D = datetime.date
 TODAY = D(2026, 11, 18)
 
 
+@skipUnless(term_service.has_visit_window_fields(), 'cis without the visit window (< v0.2.12a)')
 class _WindowFixture(_Fixture):
     """This year's term (the fixture's) and last year's, each with a section."""
 
@@ -98,6 +102,22 @@ class WindowServiceTest(_WindowFixture):
         self.assertIn(sub.pk, ids)
         self.assertNotIn(own.pk, ids)           # its own close date wins
 
+    def test_campuses_are_decided_separately(self):
+        from cis.models.course import Campus
+        a = Campus.objects.create(name=f'A-{_sfx()}',
+                                  code=f'{django_settings.CAMPUS_CODE_PREFIX}-{_sfx()}')
+        b = Campus.objects.create(name=f'B-{_sfx()}',
+                                  code=f'{django_settings.CAMPUS_CODE_PREFIX}-{_sfx()}')
+        AcademicYear.objects.filter(pk=self.term.academic_year_id).update(campus=a)
+        AcademicYear.objects.filter(pk=self.old_term.academic_year_id).update(campus=b)
+        a_next = Term.objects.create(academic_year=self.term.academic_year, code='SP',
+                                     label=f'Spring-{_sfx()}')
+        Term.objects.filter(pk=self.term.pk).update(visit_window_opens_on=D(2026, 8, 1))
+        ids = term_service.open_visit_term_ids()
+        self.assertIn(self.term.pk, ids)
+        self.assertNotIn(a_next.pk, ids)        # same campus, no window: closed
+        self.assertIn(self.old_term.pk, ids)    # campus B set none: still open
+
     def test_older_cis_without_the_fields(self):
         self._windows()
         with patch.object(term_service, 'has_visit_window_fields', return_value=False):
@@ -167,7 +187,7 @@ class FacultyPageTest(_WindowFixture):
         ids = [tid for tid, _ in ctx['schedule_term_choices']]
         self.assertIn(str(self.term.pk), ids)
         self.assertNotIn(str(self.old_term.pk), ids)
-        self.assertEqual(ctx['schedule_term_id'], ids[0])
+        self.assertEqual(ctx['schedule_term_id'], '')   # "All open terms"
         # The My Observations filter still lists every term.
         self.assertIn(str(self.old_term.pk), [t for t, _ in ctx['term_choices']])
 
@@ -193,6 +213,20 @@ class CEWarningTest(_WindowFixture):
         self.assertTrue(resp.json()['success'], resp.json())
 
     def test_picker_flags_closed_terms(self):
-        html = self.client.get(reverse('class_visit:ce_schedule_picker'),
-                               {'term_id': ''}).content.decode()
-        self.assertEqual(html.count('data-visit-window-closed'), 1)
+        def badges(term):
+            return self.client.get(reverse('class_visit:ce_schedule_picker'), {
+                'term_id': str(term.pk)}).content.decode().count('data-visit-window-closed')
+        self.assertEqual(badges(self.old_term), 1)
+        self.assertEqual(badges(self.term), 0)
+
+
+class ErrorMessageTest(_WindowFixture):
+    def test_faculty_modal_message_names_the_problem(self):
+        from ..services.form_messages import error_message
+        self._windows()
+        form = self._form(data=self._data(self.old_section))
+        form.fields['class_sections'].choices = [(str(self.old_section.id), 'x')]
+        self.assertFalse(form.is_valid())
+        msg = error_message(form)
+        self.assertIn('Class Section(s) to Visit:', msg)
+        self.assertIn('class-visit window is closed', msg)

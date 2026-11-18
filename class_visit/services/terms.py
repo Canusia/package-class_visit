@@ -31,8 +31,10 @@ def filter_by_term(queryset, term_id, field='term'):
 #
 # cis v0.2.12a adds Term.visit_window_opens_on / visit_window_closes_on, which a
 # sub-term inherits from its parent. Faculty may schedule visits only on terms
-# whose window is open today. Until any term has a window, every term is open
-# (today's behaviour), and on an older cis without the fields nothing changes.
+# whose window is open today. Until a term of a campus has a window, every term
+# of that campus is open (today's behaviour), and on an older cis without the
+# fields nothing changes. Campuses are decided separately, so one campus setting
+# windows never closes another's terms.
 
 WINDOW_FIELDS = ('visit_window_opens_on', 'visit_window_closes_on')
 _MAX_DEPTH = 10
@@ -45,18 +47,22 @@ def has_visit_window_fields():
 
 
 def open_visit_term_ids(today=None):
-    """Ids of the terms whose class-visit window is open on ``today``, or None
-    when no window applies (no fields, or no term has a window set).
+    """Ids of the terms faculty may schedule on, ``today``, or None when no
+    window applies anywhere (no fields, or no term has a window set).
 
     A window is open from its opening day through its closing day, either end
-    may be blank (no limit on that side), and a term with neither date set,
-    on itself or a parent, is closed once windows are in use."""
+    may be blank (no limit on that side). On a campus where any term has a
+    window, a term with neither date set, on itself or a parent, is closed;
+    every term of a campus with no windows stays open."""
     if not has_visit_window_fields():
         return None
     from django.utils import timezone
     from cis.models.term import Term
-    rows = {r['id']: r for r in Term.objects.values('id', 'parent_id', *WINDOW_FIELDS)}
-    if not any(r[f] for r in rows.values() for f in WINDOW_FIELDS):
+    rows = {r['id']: r for r in Term.objects.values(
+        'id', 'parent_id', 'academic_year__campus_id', *WINDOW_FIELDS)}
+    windowed_campuses = {r['academic_year__campus_id'] for r in rows.values()
+                         if any(r[f] for f in WINDOW_FIELDS)}
+    if not windowed_campuses:
         return None
     today = today or timezone.localdate()
 
@@ -71,6 +77,9 @@ def open_visit_term_ids(today=None):
 
     ids = set()
     for term_id, row in rows.items():
+        if row['academic_year__campus_id'] not in windowed_campuses:
+            ids.add(term_id)
+            continue
         opens, closes = (effective(row, f) for f in WINDOW_FIELDS)
         if opens is None and closes is None:
             continue

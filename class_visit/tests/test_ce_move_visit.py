@@ -73,6 +73,8 @@ class TeacherlessSectionsValidationTest(_MoveFixture):
         self.assertEqual(resp.status_code, 200)
         self.assertFalse(resp.json()['success'])
         self.assertIn('same instructor', resp.json()['errors'])
+        # The modal shows only `message`, so the reason must be in it.
+        self.assertIn('same instructor', resp.json()['message'])
         self.assertEqual(set(self.visit.class_sections.all()), {self.old_section})
 
 
@@ -121,6 +123,17 @@ class MoveViewTest(_MoveFixture):
         self.assertEqual(entry['to_ids'], [str(self.section.id)])
         self.assertTrue(entry['at'])
 
+    def test_move_to_another_instructor_resets_the_confirmation(self):
+        meta = dict(self.visit.meta, confirmation_token='old-token', confirmed_on='10/02/2026')
+        VisitSchedule.objects.filter(pk=self.visit.pk).update(meta=meta)
+        self._post([self.section])
+        self.visit.refresh_from_db()
+        self.assertNotIn('confirmation_token', self.visit.meta)
+        self.assertNotIn('confirmed_on', self.visit.meta)
+        entry = self.visit.meta['section_changes'][-1]
+        self.assertTrue(entry['confirmation_reset'])
+        self.assertEqual(entry['cleared_confirmed_on'], '10/02/2026')
+
     def test_edit_without_a_section_change_records_nothing(self):
         self.client.post(reverse('class_visit:ce_edit_visit', args=[self.visit.id]), {
             'class_sections': [str(self.old_section.id)],
@@ -138,7 +151,7 @@ class MoveViewTest(_MoveFixture):
     def test_non_ce_user_refused(self):
         self.client.force_login(self.faculty)
         resp = self.client.get(self._move_url())
-        self.assertNotEqual(resp.status_code, 200)
+        self.assertEqual(resp.status_code, 302)
 
     def test_edit_page_links_to_change_section(self):
         html = self.client.get(
