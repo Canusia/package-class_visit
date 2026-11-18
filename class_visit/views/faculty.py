@@ -20,6 +20,7 @@ from cis.utils import (
 )
 from cis.menu import draw_menu
 
+from ..tabs import faculty_visit_tabs
 from ..models import VisitSchedule, VisitReport, NotNeededVisit
 from ..settings.class_visit import class_visit as ClassVisitSettings
 from ..forms.faculty import VisitScheduleForm, VisitReportDynamicForm
@@ -504,7 +505,8 @@ def index(request):
 
     terms = Term.objects.all().order_by('-code')
     courses = Course.objects.filter(id__in=course_ids).order_by('name')
-    can_view_others = faculty_can_view_others_visits()
+    visit_tabs = faculty_visit_tabs.for_record(request, None, lambda slug: '')
+    can_view_others = 'others' in visit_tabs
     # "By Visitor" filter for the other-faculty tab: the people who visited sections
     # in this user's course area, each once (it used to list CourseAdministrator
     # rows -- one per course -- so a colleague appeared several times).
@@ -520,6 +522,7 @@ def index(request):
         'term_choices': term_choices(terms),
         'active_term': get_active_term(),
         'can_view_others': can_view_others,
+        'visit_tabs': visit_tabs,
         'courses': courses,
         'visitors': visitors,
         'page_title': 'Scheduled Observations',

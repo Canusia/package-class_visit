@@ -164,6 +164,27 @@ The CE **View Report** button opens the report in an in-page iframe modal.
 
 ---
 
+### Faculty page tabs
+
+The faculty class-visits page (`/faculty/class_visits/`) takes its tabs from
+`faculty_visit_tabs` in `tabs.py`: `schedule_visit` (Add Observation Date(s), the default),
+`all` (My Observations) and `others` (Other Faculty's Observations, shown only when
+`faculty_view_others_visits` is Yes). A tenant changes them in its own
+`myce/component_registry/*.py`, without overriding the template:
+
+```python
+import importlib.util
+if importlib.util.find_spec('class_visit.class_visit'):
+    from class_visit.class_visit.tabs import faculty_visit_tabs
+else:
+    from class_visit.tabs import faculty_visit_tabs
+
+faculty_visit_tabs.disable('others')      # remove a tab (unknown slug -> KeyError)
+faculty_visit_tabs.set_active('all')      # pick the default tab
+```
+
+A disabled tab has no nav item and no pane, so its table never loads.
+
 ## Post-install: removing the deprecated `class_visit_emails` from the host `cis` app
 
 Older MyCE tenants kept the class-visit email templates in the **host** module `cis/settings/class_visit_emails.py` (stored under `Setting` key `cis.settings.class_visit_emails`). This package replaces it with its own in-app settings class (key `class_visit`), and migration `0007_migrate_class_visit_emails_settings` copies the old values into the new key on deploy. After you've confirmed the new settings exist, remove the dead host-side pieces **in the tenant repo (e.g. `ewu`), not in this package**:
